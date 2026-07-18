@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta name="description" content="Aplikasi kasir POS umkm. aspikmas">
+  <meta name="keywords" content="kasirpos, kasir restoran, aplikasi kasir hp, ">
+  <meta name="author" content="@eranitikan">
+  <title>Panduan Penggunaan QA POS</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    /* Custom scrollbar and smooth experience */
+    html {
+      scroll-behavior: smooth;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    /* Shimmer effect simulation */
+    @keyframes shine {
+      0% { background-position: 200% center; }
+      100% { background-position: -200% center; }
+    }
+    .shimmer-text {
+      background: linear-gradient(120deg, #4f46e5 25%, #818cf8 45%, #4f46e5 50%, #818cf8 55%, #4f46e5 75%);
+      background-size: 200% auto;
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
+      animation: shine 3s ease-in-out infinite;
+    }
+    .dark .shimmer-text {
+      background: linear-gradient(120deg, #ffffff 25%, #c7d2fe 45%, #ffffff 50%, #c7d2fe 55%, #ffffff 75%);
+      background-size: 200% auto;
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
+      animation: shine 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 antialiased font-sans">
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border-slate-800">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 text-white p-2 rounded-xl font-black text-sm tracking-tight shadow-md">
+          QP
+        </div>
+        <div>
+          <h1 class="text-base font-black tracking-tight shimmer-text">QA POS</h1>
+          <p class="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Dokumentasi & Panduan Resmi</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <!-- Search bar (instant filter) -->
+        <div class="relative hidden sm:block">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </span>
+          <input 
+            type="text" 
+            id="search-input" 
+            placeholder="Cari fitur / topik..." 
+            class="w-64 pl-9 pr-4 py-1.5 text-xs rounded-xl border border-slate-250 bg-slate-50 focus:outline-none focus:ring-1 focus:ring-indigo-600 focus:border-indigo-600 dark:border-slate-850 dark:bg-slate-900 dark:text-white"
+          >
+        </div>
+
+        <!-- Dark/Light Mode toggle -->
+        <button 
+          id="theme-toggle" 
+          aria-label="Ubah tema" 
+          class="p-2 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer text-slate-500 dark:text-slate-400"
+        >
+          <i data-lucide="sun" id="sun-icon" class="w-4 h-4 hidden"></i>
+          <i data-lucide="moon" id="moon-icon" class="w-4 h-4"></i>
+        </button>
+
+        <a 
+          href="/" 
+          class="text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center gap-1.5"
+        >
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span>Buka Aplikasi POS</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Hero Intro Banner -->
+  <div class="bg-indigo-900 text-white relative overflow-hidden py-10 sm:py-16">
+    <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+    <div class="absolute -top-10 -left-10 w-96 h-96 bg-indigo-500/30 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-10 -right-10 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 space-y-4">
+      <div class="inline-flex items-center gap-1.5 bg-indigo-800/80 border border-indigo-700/60 rounded-full px-3.5 py-1 text-xs font-bold uppercase tracking-widest text-indigo-200">
+        <i data-lucide="award" class="w-3.5 h-3.5"></i>
+        <span>Panduan Lengkap UMKM</span>
+      </div>
+      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight">Dokumentasi Penggunaan QA POS</h2>
+      <p class="text-sm sm:text-base text-indigo-200 max-w-2xl font-medium leading-relaxed">
+        Selamat datang di pusat bantuan resmi QA POS. Temukan penjelasan rinci tentang otorisasi keamanan, sinkronisasi offline, setup cetak struk kertas thermal, pengelolaan promosi, dan optimasi data pelanggan.
+      </p>
+      
+      <!-- Mobile Search -->
+      <div class="relative sm:hidden w-full pt-2">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 mt-2">
+          <i data-lucide="search" class="w-4 h-4"></i>
+        </span>
+        <input 
+          type="text" 
+          id="search-input-mobile" 
+          placeholder="Cari panduan..." 
+          class="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Section -->
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      
+      <!-- Sidebar Navigation Menu -->
+      <aside class="lg:col-span-1 space-y-6 lg:sticky lg:top-24 max-h-[80vh] overflow-y-auto pr-2">
+        <div class="space-y-1">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">Daftar Isi Panduan</p>
+          <nav class="space-y-1">
+            <a href="#keamanan-pin" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="key" class="w-4 h-4 shrink-0 text-indigo-600"></i>
+              <span>1. Otorisasi & PIN Keamanan</span>
+            </a>
+            <a href="#offline-sync" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="wifi-off" class="w-4 h-4 shrink-0 text-emerald-600"></i>
+              <span>2. Mode Offline & Sinkronisasi</span>
+            </a>
+            <a href="#setup-printer" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="printer" class="w-4 h-4 shrink-0 text-amber-600"></i>
+              <span>3. Setup Toko & Cetak Struk</span>
+            </a>
+            <a href="#import-sheets" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="sheet" class="w-4 h-4 shrink-0 text-green-600"></i>
+              <span>4. Import Google Sheets</span>
+            </a>
+            <a href="#manajemen-promo" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="ticket" class="w-4 h-4 shrink-0 text-rose-600"></i>
+              <span>5. Manajemen Promo & Diskon</span>
+            </a>
+            <a href="#tambah-produk" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="package" class="w-4 h-4 shrink-0 text-blue-600"></i>
+              <span>6. Inventaris & Manajemen Stok</span>
+            </a>
+            <a href="#laporan-keuangan" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0 text-teal-600"></i>
+              <span>7. Laporan Keuangan POS</span>
+            </a>
+            <a href="#faq" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="help-circle" class="w-4 h-4 shrink-0 text-purple-600"></i>
+              <span>8. Tanya Jawab (FAQ)</span>
+            </a>
+          </nav>
+        </div>
+
+        <!-- Sidebar WhatsApp Support -->
+        <div class="bg-indigo-50/50 dark:bg-slate-900/60 border border-indigo-100 dark:border-slate-800 rounded-2xl p-4 space-y-3">
+          <p class="text-[10px] font-black uppercase text-indigo-700 dark:text-indigo-400 tracking-wider">Butuh bantuan teknis?</p>
+          <p class="text-[11px] text-slate-500 leading-normal">
+            Jika memiliki pertanyaan khusus mengenai implementasi POS, silakan hubungi pengembang via WhatsApp.
+          </p>
+          <a 
+            href="https://wa.me/6288806667171" 
+            target="_blank" 
+            class="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white py-2 rounded-xl font-bold text-xs shadow-xs hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          >
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+            <span>WhatsApp (+62 888)</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Main Docs Articles -->
+      <main class="lg:col-span-3 space-y-12">
+        
+        <!-- SECTION 1: Keamanan & PIN -->
+        <article id="keamanan-pin" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 p-2.5 rounded-xl">
+              <i data-lucide="key" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">1. Otorisasi Multi-Level & PIN Keamanan</h3>
+              <p class="text-xs text-slate-400">Pengamanan terminal kasir, batas wewenang kasir vs admin, dan penggantian PIN</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Aplikasi QA POS dilengkapi dengan sistem **Kunci Terminal Keamanan** berbasis PIN numerik 5 digit. Fitur ini menjamin akuntabilitas transaksi, mencegah manipulasi harga, dan membatasi otorisasi di lingkungan retail yang padat.
+            </p>
+
+            <!-- Role Table -->
+            <div class="overflow-x-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl p-4 space-y-2">
+              <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider block">Wewenang Tingkat Akses (Role Privilege Level)</span>
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 uppercase">
+                    <th class="py-2">Fitur / Halaman</th>
+                    <th class="py-2">Kasir POS (Cashier)</th>
+                    <th class="py-2">Administrator Utama</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                  <tr>
+                    <td class="py-2.5 font-bold">Menu Transaksi Kasir POS</td>
+                    <td class="py-2.5 text-emerald-600"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Penuh</td>
+                    <td class="py-2.5 text-emerald-600"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Penuh</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-bold">Edit Stok / Inventaris</td>
+                    <td class="py-2.5 text-rose-500"><i data-lucide="x" class="inline w-4 h-4 mr-1"></i> Tidak Bisa</td>
+                    <td class="py-2.5 text-emerald-600"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Bisa (CRUD)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-bold">Ubah Nama & Motto Resto</td>
+                    <td class="py-2.5 text-rose-500"><i data-lucide="x" class="inline w-4 h-4 mr-1"></i> Tidak Bisa</td>
+                    <td class="py-2.5 text-emerald-600"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Bisa (Setup Toko)</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-bold">Laporan Keuangan & Grafik</td>
+                    <td class="py-2.5 text-rose-500"><i data-lucide="lock" class="inline w-3.5 h-3.5 mr-1 text-rose-500"></i> Terkunci</td>
+                    <td class="py-2.5 text-emerald-600"><i data-lucide="check" class="inline w-4 h-4 mr-1"></i> Penuh</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2.5 font-bold">Ubah PIN Pengguna Kasir</td>
+                    <td class="py-2.5 text-indigo-600">Hanya PIN Dirinya Sendiri</td>
+                    <td class="py-2.5 text-emerald-600">Bisa mengubah PIN Siapapun</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="bg-indigo-50/50 dark:bg-slate-900/60 border border-indigo-100 dark:border-slate-800 rounded-2xl p-4 space-y-2">
+              <p class="font-bold text-slate-800 dark:text-white">🔑 Profil Pengguna & Otorisasi Sistem:</p>
+              <ul class="list-disc list-inside space-y-2.5 ml-1 text-[11px] text-slate-600 dark:text-slate-300">
+                <li>
+                  <strong class="text-indigo-600 dark:text-indigo-400">Admin Utama</strong> (Role: Admin) — 
+                  <span class="text-rose-600 dark:text-rose-400 font-bold">PIN Dirahasiakan</span> demi alasan keamanan sistem operasional. Silakan hubungi nomor WhatsApp yang tertera di menu <strong>About (Tentang Aplikasi)</strong> atau klik untuk menghubungi WA ke nomor <a href="https://wa.me/6288806667171" target="_blank" class="text-indigo-600 dark:text-indigo-400 underline font-extrabold hover:text-indigo-700">6288806667171</a> guna mendapatkan kode otentikasi administrator resmi Anda.
+                </li>
+                <li>
+                  <strong class="text-blue-600 dark:text-blue-400">Kasino (Kasir Shift A)</strong> (Role: Cashier) — 
+                  PIN Default Bawaan: <code class="font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-600 font-bold">33344</code>
+                </li>
+                <li>
+                  <strong class="text-blue-600 dark:text-blue-400">Karsini (Kasir Shift B)</strong> (Role: Cashier) — 
+                  PIN Default Bawaan: <code class="font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-indigo-600 font-bold">12345</code>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Cara Mengganti PIN -->
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Cara Mengganti PIN Melalui Aplikasi:</h4>
+              <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Buka menu samping sidebar, pilih halaman <strong class="text-indigo-600 dark:text-indigo-400">"Setup User Akses"</strong>.</li>
+                <li>Jika masuk sebagai <strong class="text-indigo-600 dark:text-indigo-400">Admin Utama</strong>, Anda dapat memilih pengguna mana saja yang ingin diganti PIN-nya melalui dropdown seleksi. Jika masuk sebagai kasir biasa, Anda hanya diizinkan memilih diri Anda sendiri.</li>
+                <li>Masukkan <strong class="text-indigo-600 dark:text-indigo-400">PIN Baru (5 digit angka)</strong> dan lakukan verifikasi konfirmasi ulang pada form isian.</li>
+                <li>Klik tombol <strong class="text-indigo-600">"Simpan PIN Baru"</strong>. Sistem akan langsung memperbarui PIN dan memberi tahu notifikasi keberhasilan di layar secara real-time.</li>
+              </ol>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 2: Mode Offline & Sinkronisasi -->
+        <article id="offline-sync" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 p-2.5 rounded-xl">
+              <i data-lucide="wifi" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">2. Mode Offline & Arsitektur Sinkronisasi</h3>
+              <p class="text-xs text-slate-400">Mekanisme kerja antrean transaksi ketika koneksi terputus dan proses sinkronisasi otomatis</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Salah satu keunggulan utama QA POS adalah **kemampuan offline-first mandiri**. Aplikasi dirancang untuk memastikan kasir dapat terus mencetak struk transaksi pelanggan walaupun jaringan internet padam total.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2 bg-white dark:bg-slate-900">
+                <h4 class="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i data-lucide="wifi-off" class="text-rose-500 w-4 h-4"></i>
+                  Saat Koneksi Offline
+                </h4>
+                <ul class="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400">
+                  <li>Layar menampilkan banner peringatan merah berkelebat sebagai pengingat.</li>
+                  <li>Transaksi POS disimpan sementara dalam antrean lokal (<em class="text-indigo-500 font-semibold">Pending Local Queue</em>).</li>
+                  <li>Stok produk lokal terpotong secara instan agar tidak terjadi penjualan berlebih (oversell).</li>
+                </ul>
+              </div>
+
+              <div class="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 space-y-2 bg-white dark:bg-slate-900">
+                <h4 class="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i data-lucide="refresh-cw" class="text-emerald-500 w-4 h-4 animate-spin"></i>
+                  Saat Kembali Online
+                </h4>
+                <ul class="list-disc list-inside space-y-1 text-slate-500 dark:text-slate-400">
+                  <li>Sistem mendeteksi kembalinya koneksi secara otomatis.</li>
+                  <li>Mulai menyinkronkan seluruh antrean transaksi lokal ke database cloud.</li>
+                  <li>Indikator status sinkronisasi berubah hijau dan menampilkan riwayat sinkronisasi.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-2xl p-4 text-amber-850 dark:text-amber-200">
+              <p class="font-bold flex items-center gap-1.5 mb-1 text-xs">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0"></i>
+                Catatan Penting Sinkronisasi:
+              </p>
+              <p class="text-[11px] leading-normal">
+                Jika sistem dalam simulasi offline dan browser dimuat ulang (reload/refresh), data antrean offline dijamin tidak hilang karena aplikasi menggunakan penyimpanan persisten browser lokal (<code class="font-mono">localStorage</code>). Kami menyarankan untuk melakukan sinkronisasi manual jika indikator POS menunjukkan antrean belum terkirim.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 3: Setup Toko & Printer -->
+        <article id="setup-printer" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 p-2.5 rounded-xl">
+              <i data-lucide="printer" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">3. Setup Toko & Konfigurasi Cetak Struk</h3>
+              <p class="text-xs text-slate-400">Panduan penyesuaian nama resto, logo, footer struk, lebar kertas thermal, dan pengaturan pajak</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Setiap UMKM memiliki kebutuhan cetak struk yang unik. QA POS menyediakan halaman kustomisasi menyeluruh untuk menghasilkan struk profesional yang disesuaikan dengan jenis printer thermal mini Anda.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Langkah Mengonfigurasi Cetak Struk:</h4>
+              <ol class="list-decimal list-inside space-y-2 ml-1">
+                <li>
+                  Masuk sebagai <strong class="text-indigo-600 dark:text-indigo-400">Admin Utama</strong> (Silakan hubungi WhatsApp yang tertera di menu "About" atau klik untuk WhatsApp ke <a href="https://wa.me/6288806667171" target="_blank" class="text-indigo-600 dark:text-indigo-400 underline font-extrabold">6288806667171</a> untuk kode PIN admin).
+                </li>
+                <li>
+                  Buka tab menu <strong class="text-indigo-600 dark:text-indigo-400">"Setup Toko & Struk"</strong>.
+                </li>
+                <li>
+                  Atur nama restoran (misal: "Resto Makmur Lezat"), motto operasional, dan detail nomor telepon/kontak yang akan muncul di header atas struk.
+                </li>
+                <li>
+                  Pilih ukuran lebar kertas printer thermal:
+                  <ul class="list-disc list-inside space-y-1 ml-6 mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    <li><strong class="text-slate-700 dark:text-white">Thermal 58mm</strong> (Lebar standar printer bluetooth mobile / saku).</li>
+                    <li><strong class="text-slate-700 dark:text-white">Thermal 80mm</strong> (Lebar standar printer kasir desktop laci kasir).</li>
+                  </ul>
+                </li>
+                <li>
+                  Masukkan persentase biaya layanan (Service Charge) dan Pajak Daerah (PB1 / PPN) jika diperlukan.
+                </li>
+                <li>
+                  Tulis pesan footer kustom di baris terbawah struk (contoh: "Terima Kasih Atas Kunjungan Anda!").
+                </li>
+              </ol>
+            </div>
+
+            <div class="border border-indigo-100 dark:border-slate-800 rounded-2xl p-4 bg-indigo-50/20 dark:bg-slate-900/40 space-y-2">
+              <p class="font-bold text-indigo-700 dark:text-indigo-400">💡 Cara Cetak Struk ke Printer Fisik:</p>
+              <p class="text-[11px] leading-normal">
+                Saat kasir menekan tombol "Bayar & Cetak Struk", jendela pratinjau struk mini yang didesain presisi akan muncul. Klik tombol **"Cetak Struk Sekarang"** untuk membuka dialog cetak sistem komputer atau HP. Pastikan Anda telah menghubungkan printer thermal Anda dan menyetel ukuran kertas yang sesuai (58mm/80mm) pada pengaturan printer tujuan.
+              </p>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 4: Google Sheets -->
+        <article id="import-sheets" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-green-100 dark:bg-green-950 text-green-600 dark:text-green-400 p-2.5 rounded-xl">
+              <i data-lucide="sheet" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">4. Integrasi & Import Database dari Google Sheets</h3>
+              <p class="text-xs text-slate-400">Metode penyelarasan data pelanggan UMKM dari file Google Sheets eksternal secara massal</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Untuk menghemat waktu, Anda tidak perlu mengetik satu-per-satu database pelanggan Anda. QA POS mendukung import massal dari spreadsheet Google Sheets secara real-time.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Persiapan Format Kolom di Google Sheets:</h4>
+              <p>Pastikan baris paling atas (Header) file Excel / Google Sheets Anda memiliki susunan kolom sebagai berikut:</p>
+              
+              <!-- Column layout visualizer -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[11px] font-mono">
+                <div class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span class="block font-black text-indigo-650 dark:text-indigo-400">A1</span>
+                  <span>name</span>
+                </div>
+                <div class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span class="block font-black text-indigo-650 dark:text-indigo-400">B1</span>
+                  <span>email</span>
+                </div>
+                <div class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span class="block font-black text-indigo-650 dark:text-indigo-400">C1</span>
+                  <span>phone</span>
+                </div>
+                <div class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <span class="block font-black text-indigo-650 dark:text-indigo-400">D1</span>
+                  <span>tier</span>
+                </div>
+              </div>
+              <p class="text-[10px] text-slate-400 font-mono mt-1">* Note: Kolom tier dapat diisi dengan 'regular', 'silver', atau 'gold'.</p>
+            </div>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Langkah Melakukan Import:</h4>
+              <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Buka halaman <strong class="text-indigo-600 dark:text-indigo-400">"Database Pelanggan"</strong>.</li>
+                <li>Klik tombol <strong class="text-indigo-600 dark:text-indigo-400">"Import Excel / Google Sheets"</strong> di sisi atas tabel.</li>
+                <li>Pilih file CSV / Spreadsheet yang telah disiapkan dari komputer Anda, atau salin tautan Spreadsheet publik jika diminta oleh sistem.</li>
+                <li>Verifikasi jumlah baris data pelanggan baru yang berhasil dideteksi, lalu klik **"Konfirmasi & Gabungkan"**.</li>
+                <li>Data pelanggan baru langsung masuk ke daftar kasir POS dan siap digunakan untuk transaksi pengumpulan poin member.</li>
+              </ol>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 5: Promo & Diskon -->
+        <article id="manajemen-promo" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 p-2.5 rounded-xl">
+              <i data-lucide="ticket" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">5. Manajemen Promo, Diskon, & Banner Berjalan</h3>
+              <p class="text-xs text-slate-400">Cara pembuatan kode kupon diskon nominal, persentase, serta kontrol running-text di bagian bawah layar</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Tingkatkan omset penjualan dengan menyelenggarakan promosi musiman. Aplikasi QA POS menyediakan pusat kontrol kupon promosi yang secara dinamis terhubung ke teks berita berjalan (running banner ticker) di terminal utama kasir.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Jenis Promo yang Didukung:</h4>
+              <ul class="list-disc list-inside space-y-1.5 ml-1">
+                <li><strong class="text-slate-850 dark:text-white">Diskon Persentase (%)</strong> — Mengurangi total belanja berdasarkan rasio persentase tertentu (contoh: Diskon 10% s.d maks Rp50.000).</li>
+                <li><strong class="text-slate-850 dark:text-white">Diskon Nominal (Rp)</strong> — Pengurangan nilai mata uang dalam nominal tetap langsung ke total belanja kasir (contoh: Potongan langsung Rp20.000).</li>
+              </ul>
+            </div>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Membuat & Mengaktifkan Kupon:</h4>
+              <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Masuk ke menu <strong class="text-rose-600 dark:text-rose-400">"Setup Promo & Diskon"</strong>.</li>
+                <li>Klik tombol <strong class="text-indigo-650">"Tambah Kode Promo Baru"</strong>.</li>
+                <li>Tentukan nama kampanye, kode unik kupon (misal: <code class="font-mono bg-slate-150 px-1 py-0.5 rounded font-bold">HEMATMANTAP</code>), tipe potongan, dan nominal kupon.</li>
+                <li>Sistem secara otomatis memasukkan promo aktif ke dalam baris **Running Text (Banner Ticker)** kasir POS sehingga petugas kasir dapat mengeklik teks berjalan tersebut untuk mengaplikasikan diskon secara instan pada transaksi yang sedang berlangsung.</li>
+              </ol>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 6: Inventaris Stok -->
+        <article id="tambah-produk" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 p-2.5 rounded-xl">
+              <i data-lucide="package" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">6. Manajemen Inventaris & Kontrol Stok Produk</h3>
+              <p class="text-xs text-slate-400">Mengelola kategori makanan/minuman, menyetel batas minimal stok kritis, dan penambahan produk baru</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Pantau ketersediaan barang jualan Anda. QA POS memiliki deteksi otomatis stok kritis (low stock alert) yang akan mengirimkan notifikasi instan berupa tanda lonceng jika jumlah barang Anda berada di bawah ambang batas yang Anda tentukan.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Cara Menambahkan Produk Baru (Hanya Admin):</h4>
+              <ol class="list-decimal list-inside space-y-1.5 ml-1">
+                <li>Buka halaman <strong class="text-indigo-600 dark:text-indigo-400">"Inventaris & Stok"</strong>.</li>
+                <li>Klik tombol <strong class="text-indigo-650">"Tambah Produk"</strong> di pojok kanan atas halaman.</li>
+                <li>Lengkapi formulir produk: Nama produk, Kategori (Makanan/Minuman/Cemilan), Harga Jual (Rp), Stok Saat Ini, dan batas minimal stok (<em class="text-rose-500 font-bold">Min Stock limit</em>).</li>
+                <li>Simpan produk. Produk akan langsung tampil dalam katalog di layar terminal kasir utama POS secara instan.</li>
+              </ol>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 7: Laporan Keuangan -->
+        <article id="laporan-keuangan" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400 p-2.5 rounded-xl">
+              <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">7. Analisis Laporan Keuangan & Grafik Penjualan</h3>
+              <p class="text-xs text-slate-400">Penjelasan rekapitulasi penjualan harian, grafik performa, dan filter metode pembayaran kasir</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Halaman ini hanya dapat diakses oleh pemilik usaha (Administrator) yang bertujuan untuk merumuskan keputusan bisnis strategis melalui visualisasi data transaksi yang dikumpulkan oleh kasir.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Elemen Laporan yang Ditampilkan:</h4>
+              <ul class="list-disc list-inside space-y-1.5 ml-1">
+                <li><strong class="text-slate-850 dark:text-white">Total Pendapatan Bersih (Net Revenue)</strong> — Total rupiah yang diterima setelah dikurangi diskon promo dan pajak.</li>
+                <li><strong class="text-slate-850 dark:text-white">Grafik Tren Penjualan Harian</strong> — Grafik visual dinamis yang memetakan performa omset dari hari ke hari menggunakan grafik kurva yang indah.</li>
+                <li><strong class="text-slate-850 dark:text-white">Metode Pembayaran Terfavorit</strong> — Diagram persentase penggunaan QRIS, Cash (Tunai), maupun kartu Debit/Kredit oleh pembeli Anda.</li>
+                <li><strong class="text-slate-850 dark:text-white">Daftar Produk Terlaris (Best-Selling Items)</strong> — List peringkat makanan/minuman yang paling sering dibeli beserta jumlah kuantiti terjualnya.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 8: FAQ -->
+        <article id="faq" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 p-2.5 rounded-xl">
+              <i data-lucide="help-circle" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">8. Pertanyaan yang Sering Diajukan (FAQ)</h3>
+              <p class="text-xs text-slate-400">Kumpulan solusi praktis atas permasalahan operasional kasir sehari-hari</p>
+            </div>
+          </div>
+
+          <!-- FAQ Accordions -->
+          <div class="space-y-3">
+            
+            <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4">
+              <button class="faq-btn w-full flex items-center justify-between text-left font-extrabold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer">
+                <span>Q: Bagaimana cara mengganti petugas kasir yang sedang aktif di terminal?</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+              </button>
+              <div class="faq-content mt-2 text-xs text-slate-500 leading-relaxed hidden">
+                Jawab: Anda dapat menekan tombol <strong>"Kunci"</strong> di pojok kanan atas navigasi header aplikasi. Jendela kunci terminal (lock screen) akan terbuka, silakan pilih profil kasir/admin tujuan, lalu masukkan PIN keamanan 5 digit yang sesuai untuk masuk kembali ke sistem.
+              </div>
+            </div>
+
+            <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4">
+              <button class="faq-btn w-full flex items-center justify-between text-left font-extrabold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer">
+                <span>Q: Mengapa kasir biasa tidak bisa melihat halaman Laporan Keuangan?</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+              </button>
+              <div class="faq-content mt-2 text-xs text-slate-500 leading-relaxed hidden">
+                Jawab: Ini adalah fitur keamanan sistem. Kasir hanya bertugas mencatat penjualan di POS. Laporan keuangan berisi omset keseluruhan usaha, modal, dan margin laba yang bersifat rahasia dan hanya boleh diakses oleh pemilik usaha (Administrator).
+              </div>
+            </div>
+
+            <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4">
+              <button class="faq-btn w-full flex items-center justify-between text-left font-extrabold text-xs text-slate-900 dark:text-white focus:outline-none cursor-pointer">
+                <span>Q: Apakah poin keanggotaan customer dihitung secara otomatis?</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-450 transition-transform duration-200"></i>
+              </button>
+              <div class="faq-content mt-2 text-xs text-slate-500 leading-relaxed hidden">
+                Jawab: Ya. Setiap kali Anda melakukan checkout transaksi di POS kasir dan memilih pelanggan terdaftar, sistem akan otomatis mengakumulasikan nilai total belanja menjadi poin member dan menyimpannya ke dalam profil pelanggan tersebut secara real-time.
+              </div>
+            </div>
+
+          </div>
+        </article>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 py-10 mt-16 text-center text-xs space-y-3 font-medium">
+    <div class="max-w-7xl mx-auto px-4">
+      <p class="font-extrabold text-white text-sm tracking-wider uppercase">QA POS — Digital Aspikmas Kembaran</p>
+      <p>Sistem Aplikasi Pencatat Transaksi Kasir Mini Thermal & Manajemen CRM Pelanggan.</p>
+      <p class="text-slate-600 mt-4">&copy; 2026 QA POS. Seluruh hak cipta dilindungi undang-undang.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Instant filter/search algorithm for sections and articles
+    const searchInput = document.getElementById('search-input');
+    const searchInputMobile = document.getElementById('search-input-mobile');
+
+    function filterDocs(query) {
+      const q = query.toLowerCase().trim();
+      const articles = document.querySelectorAll('article');
+      
+      articles.forEach(art => {
+        const text = art.innerText.toLowerCase();
+        if (text.includes(q)) {
+          art.style.display = 'block';
+        } else {
+          art.style.display = 'none';
+        }
+      });
+    }
+
+    searchInput.addEventListener('input', (e) => filterDocs(e.target.value));
+    searchInputMobile.addEventListener('input', (e) => filterDocs(e.target.value));
+
+    // Dark/Light Theme Switcher using localStorage and tailwind dark class
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+
+    // On page load, check stored or preferred theme
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      sunIcon.classList.remove('hidden');
+      moonIcon.classList.add('hidden');
+    } else {
+      document.documentElement.classList.remove('dark');
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    });
+
+    // Sidebar active indicator highlighting based on current section viewport position
+    const navItems = document.querySelectorAll('.nav-item');
+    const sections = document.querySelectorAll('article');
+
+    window.addEventListener('scroll', () => {
+      let currentSectionId = '';
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        if (window.scrollY >= top - 150) {
+          currentSectionId = sec.getAttribute('id');
+        }
+      });
+
+      navItems.forEach(item => {
+        item.classList.remove('border-indigo-600', 'bg-indigo-50/50', 'dark:bg-slate-900', 'text-slate-950', 'dark:text-white');
+        if (item.getAttribute('href') === `#${currentSectionId}`) {
+          item.classList.add('border-indigo-600', 'bg-indigo-50/50', 'dark:bg-slate-900', 'text-slate-950', 'dark:text-white');
+        }
+      });
+    });
+
+    // FAQ Accordion Toggle Interaction
+    const faqBtns = document.querySelectorAll('.faq-btn');
+    faqBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const content = btn.nextElementSibling;
+        const chevron = btn.querySelector('[data-lucide="chevron-down"]');
+        
+        // Close others or just toggle this one
+        const isOpen = !content.classList.contains('hidden');
+        content.classList.toggle('hidden', isOpen);
+        
+        if (chevron) {
+          chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
