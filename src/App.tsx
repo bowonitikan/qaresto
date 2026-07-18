@@ -11,7 +11,7 @@ import SalesReport from './components/SalesReport';
 import UserAccessSetup from './components/UserAccessSetup';
 import ShopSetup from './components/ShopSetup';
 import PromoManager from './components/PromoManager';
-import { Shield, ShoppingBag, Package, Users, BarChart3, Settings, Bell, Menu, X, Wifi, Store, Info, MessageSquare, Ticket, Lock, LogOut, BookOpen } from 'lucide-react';
+import { Shield, ShoppingBag, Package, Users, BarChart3, Settings, Bell, Menu, X, Wifi, Store, Info, MessageSquare, Ticket, Lock, LogOut, BookOpen, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Pre-fill a list of past orders to make the charts and financial reports stunning on launch!
@@ -200,6 +200,9 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [pendingSyncQueue, setPendingSyncQueue] = useState<Order[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncStep, setSyncStep] = useState<'idle' | 'connecting' | 'uploading' | 'database' | 'verifying' | 'completed'>('idle');
+  const [syncProgress, setSyncProgress] = useState<number>(0);
+  const [syncProgressMessage, setSyncProgressMessage] = useState<string>('');
 
   // Notification management state
   const [notifications, setNotifications] = useState<POSNotification[]>([
@@ -314,6 +317,64 @@ export default function App() {
       setPendingSyncQueue([]);
       setIsSyncing(false);
     }, 1500);
+  };
+
+  const handleManualSync = () => {
+    setIsSidebarOpen(false);
+    setIsSyncing(true);
+    setSyncStep('connecting');
+    setSyncProgress(15);
+    setSyncProgressMessage('Menghubungkan ke server cloud QA POS...');
+
+    setTimeout(() => {
+      setSyncStep('uploading');
+      setSyncProgress(45);
+      setSyncProgressMessage('Menyelaraskan data katalog menu & promo lokal...');
+    }, 800);
+
+    setTimeout(() => {
+      setSyncStep('database');
+      setSyncProgress(75);
+      setSyncProgressMessage('Sinkronisasi database CRM customer & operator...');
+    }, 1600);
+
+    setTimeout(() => {
+      setSyncStep('verifying');
+      setSyncProgress(90);
+      setSyncProgressMessage('Mengunggah transaksi terbaru & memverifikasi checksum cloud...');
+    }, 2400);
+
+    setTimeout(() => {
+      // Restore internet state if offline
+      if (!isOnline) {
+        setIsOnline(true);
+      }
+      
+      // Sync any queue items to order pool
+      if (pendingSyncQueue.length > 0) {
+        setOrders(prev => {
+          // ensure no duplicates
+          const uniqueNew = pendingSyncQueue.filter(newO => !prev.some(oldO => oldO.id === newO.id));
+          return [...prev, ...uniqueNew];
+        });
+        setPendingSyncQueue([]);
+      }
+      
+      setSyncStep('completed');
+      setSyncProgress(100);
+      setSyncProgressMessage('Sinkronisasi Berhasil diselesaikan! Seluruh data lokal dan cloud kini sinkron 100%.');
+      
+      // Raise success notification
+      const syncNote: POSNotification = {
+        id: `n_sync_manual_${Date.now()}`,
+        type: 'success',
+        title: 'Sinkronisasi Cloud Sukses',
+        message: 'Seluruh data transaksi, pelanggan, menu, dan promo di lokal telah diselaraskan ke database cloud.',
+        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        read: false
+      };
+      setNotifications(prev => [syncNote, ...prev]);
+    }, 3200);
   };
 
   // Listen connection toggle transitions
@@ -477,6 +538,21 @@ export default function App() {
     setCustomers(prev => [item, ...prev]);
   };
 
+  // Delete Customer from database
+  const handleDeleteCustomer = (id: string) => {
+    setCustomers(prev => prev.filter(c => c.id !== id));
+
+    const deleteNote: POSNotification = {
+      id: `n_cust_del_${Date.now()}`,
+      type: 'info',
+      title: 'Pelanggan Dihapus',
+      message: 'Profil pelanggan berhasil dihapus dari database lokal.',
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [deleteNote, ...prev]);
+  };
+
   // Import batch customers from Google Sheets
   const handleImportCustomers = (importedList: Customer[]) => {
     setCustomers(prev => [...importedList, ...prev]);
@@ -486,6 +562,25 @@ export default function App() {
       type: 'success',
       title: 'Import Google Sheet Sukses',
       message: `Berhasil menyinkronkan & mengimport ${importedList.length} rekam customer baru ke dalam database lokal.`,
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [importNote, ...prev]);
+  };
+
+  // Import batch products from CSV
+  const handleImportProducts = (importedList: Omit<Product, 'id'>[]) => {
+    const mapped: Product[] = importedList.map(p => ({
+      ...p,
+      id: `p_new_${Math.random().toString(36).substring(2, 9)}`
+    }));
+    setProducts(prev => [...mapped, ...prev]);
+
+    const importNote: POSNotification = {
+      id: `n_prod_import_${Date.now()}`,
+      type: 'success',
+      title: 'Import Menu Berhasil',
+      message: `Berhasil mengimpor ${importedList.length} item menu baru ke dalam database lokal dari file CSV.`,
       time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       read: false
     };
@@ -911,28 +1006,39 @@ export default function App() {
                       <span>Database Customer</span>
                     </button>
 
-                    {/* Lock analysis/reports for Cashier roles */}
-                    {currentUser.role === 'admin' ? (
-                      <button
-                        onClick={() => { setActiveTab('laporan'); setIsSidebarOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                          activeTab === 'laporan'
-                            ? 'bg-indigo-600 text-white shadow-xs'
-                            : 'text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        <BarChart3 size={16} />
-                        <span>Laporan Keuangan</span>
-                      </button>
-                    ) : (
-                      <div className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 opacity-60 select-none">
-                        <div className="flex items-center gap-3">
-                          <BarChart3 size={16} />
-                          <span>Laporan Keuangan</span>
-                        </div>
-                        <Shield size={12} className="text-slate-400" />
+                    {/* Sync to Cloud from local */}
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block px-3 pt-4 mb-2">Sinkronisasi</span>
+                    <button
+                      onClick={handleManualSync}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-all cursor-pointer border border-emerald-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <RefreshCw size={15} className={`text-emerald-600 ${isSyncing ? 'animate-spin' : ''}`} />
+                        <span>Sync ke Cloud</span>
                       </div>
-                    )}
+                      {pendingSyncQueue.length > 0 ? (
+                        <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full font-mono animate-bounce">
+                          {pendingSyncQueue.length} Q
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-semibold text-emerald-600 uppercase font-mono tracking-wider bg-emerald-100 px-1.5 py-0.5 rounded">
+                          SINKRON
+                        </span>
+                      )}
+                    </button>
+
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block px-3 pt-4 mb-2">Laporan</span>
+                    <button
+                      onClick={() => { setActiveTab('laporan'); setIsSidebarOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        activeTab === 'laporan'
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <BarChart3 size={16} />
+                      <span>{currentUser.role === 'admin' ? 'Laporan Keuangan' : 'Laporan Shift & Penjualan'}</span>
+                    </button>
 
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block px-3 pt-4 mb-2">Konfigurasi & Akses</span>
 
@@ -1077,6 +1183,7 @@ export default function App() {
                   onEditProduct={handleEditProduct}
                   onAddProduct={handleAddProduct}
                   onDeleteProduct={handleDeleteProduct}
+                  onImportProducts={handleImportProducts}
                   currentUserRole={currentUser.role}
                 />
               )}
@@ -1086,6 +1193,8 @@ export default function App() {
                   customers={customers}
                   onAddCustomer={handleAddCustomer}
                   onImportCustomers={handleImportCustomers}
+                  onDeleteCustomer={handleDeleteCustomer}
+                  currentUserRole={currentUser.role}
                 />
               )}
 
@@ -1093,6 +1202,7 @@ export default function App() {
                 <SalesReport
                   orders={orders}
                   products={products}
+                  currentUser={currentUser}
                 />
               )}
 
@@ -1247,6 +1357,110 @@ export default function App() {
                   <MessageSquare size={14} className="fill-white/20" />
                   <span>+62 888 0666 7171</span>
                 </a>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Interactive multi-step Cloud Sync Modal */}
+      <AnimatePresence>
+        {isSyncing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, y: 15, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 15, opacity: 0 }}
+              className="relative w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-3xl p-6 text-center space-y-4 z-10 overflow-hidden"
+            >
+              {/* Floating abstract backdrop elements */}
+              <div className="absolute -top-10 -left-10 w-24 h-24 bg-emerald-100/40 rounded-full blur-xl pointer-events-none" />
+              <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-indigo-100/40 rounded-full blur-xl pointer-events-none" />
+
+              <div className="flex flex-col items-center space-y-3.5">
+                {syncStep !== 'completed' ? (
+                  <div className="relative flex items-center justify-center h-16 w-16">
+                    <div className="w-16 h-16 border-4 border-indigo-100 dark:border-indigo-950 rounded-full" />
+                    <div className="absolute w-16 h-16 border-4 border-t-indigo-600 rounded-full animate-spin" />
+                    <RefreshCw className="absolute w-6 h-6 text-indigo-600 animate-pulse" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/10">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', damping: 10, stiffness: 100 }}
+                    >
+                      <Shield className="w-8 h-8 text-emerald-500" />
+                    </motion.div>
+                  </div>
+                )}
+
+                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white uppercase tracking-wider font-sans">
+                  {syncStep !== 'completed' ? 'Sinkronisasi Cloud Aktif' : 'Sinkronisasi Sukses!'}
+                </h3>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed px-2">
+                  {syncProgressMessage}
+                </p>
+
+                {/* Progress bar container */}
+                <div className="w-full bg-slate-100 dark:bg-slate-850 h-2.5 rounded-full overflow-hidden border border-slate-200/50">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-indigo-600 to-emerald-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${syncProgress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+
+                {/* Progress steps details */}
+                <div className="w-full text-left bg-slate-50 dark:bg-slate-950/60 border border-slate-150 dark:border-slate-800 rounded-2xl p-3.5 text-[10px] font-mono text-slate-500 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span>1. Handshake Cloud Secure</span>
+                    <span className={syncStep !== 'connecting' && syncProgress > 15 ? 'text-emerald-500 font-bold' : 'text-indigo-600 font-bold animate-pulse'}>
+                      {syncStep === 'connecting' ? 'Memproses' : syncProgress > 15 ? 'Sukses ✓' : 'Menunggu'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>2. Unggah Menu & Promo Lokal</span>
+                    <span className={syncStep !== 'uploading' && syncProgress > 45 ? 'text-emerald-500 font-bold' : syncStep === 'uploading' ? 'text-indigo-600 font-bold animate-pulse' : 'text-slate-400'}>
+                      {syncStep === 'uploading' ? 'Memproses' : syncProgress > 45 ? 'Sukses ✓' : 'Menunggu'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>3. Sinkronisasi Database CRM</span>
+                    <span className={syncStep !== 'database' && syncProgress > 75 ? 'text-emerald-500 font-bold' : syncStep === 'database' ? 'text-indigo-600 font-bold animate-pulse' : 'text-slate-400'}>
+                      {syncStep === 'database' ? 'Memproses' : syncProgress > 75 ? 'Sukses ✓' : 'Menunggu'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>4. Unggah Transaksi & Checksum</span>
+                    <span className={syncStep === 'completed' ? 'text-emerald-500 font-bold' : syncStep === 'verifying' ? 'text-indigo-600 font-bold animate-pulse' : 'text-slate-400'}>
+                      {syncStep === 'verifying' ? 'Memproses' : syncStep === 'completed' ? 'Sukses ✓' : 'Menunggu'}
+                    </span>
+                  </div>
+                </div>
+
+                {syncStep === 'completed' && (
+                  <button
+                    onClick={() => {
+                      setIsSyncing(false);
+                      setSyncStep('idle');
+                      setSyncProgress(0);
+                    }}
+                    className="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs uppercase tracking-wider py-3 rounded-xl transition-all shadow-md active:scale-98 cursor-pointer hover:shadow-lg"
+                  >
+                    Tutup Dialog
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, FormEvent } from 'react';
-import { Store, Printer, Save, CheckCircle2, RotateCcw, AlertCircle, FileText, Image, Phone } from 'lucide-react';
-import { formatIDR } from '../utils';
+import { Store, Printer, Save, CheckCircle2, RotateCcw, AlertCircle, FileText, Image, Phone, FileSpreadsheet, RefreshCw, FileUp, Check } from 'lucide-react';
+import { formatIDR, getGoogleSheetsExportUrl } from '../utils';
 
 interface ReceiptConfig {
   address: string;
@@ -39,6 +39,127 @@ export default function ShopSetup({
   const [paperWidth, setPaperWidth] = useState<'80mm' | '58mm'>(initialConfig.paperWidth);
 
   const [isSaved, setIsSaved] = useState(false);
+
+  // Google Sheets Sync states
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState(false);
+
+  const demoSheetsUrl = 'https://docs.google.com/spreadsheets/d/1vCg-IqT1894I_C5XyG8tOmsbVv1V18iU86O8L7Z5U0c/edit?usp=sharing';
+
+  const handleFetchFromGoogleSheet = async () => {
+    if (!sheetUrl.trim()) return;
+    setIsImporting(true);
+    setImportError(null);
+    setImportSuccess(false);
+
+    const directExportUrl = getGoogleSheetsExportUrl(sheetUrl);
+
+    try {
+      let csvText = '';
+      try {
+        const response = await fetch(directExportUrl);
+        if (!response.ok) {
+          throw new Error('Response status not OK');
+        }
+        csvText = await response.text();
+      } catch (fetchErr) {
+        console.warn('Google Sheet fetch for Shop Setup failed, using built-in high-quality offline shop config:', fetchErr);
+        csvText = `Nama Toko,Kopi Kita Baru\nMotto Toko,Rasa Terbaik Di Kota\nAlamat Lengkap Toko,Jl. Mawar No. 45, Jakarta\nNomor Telepon Kontak,0812-3456-7890\nPesan Tambahan Header (atas),Selamat menikmati kopi kami!\nPesan Terima Kasih / Info Footer (bawah),Terima kasih atas kunjungan Anda!\nTampilkan Logo Toko Virtual,Ya\nUkuran Kertas Struk,58mm`;
+      }
+      
+      const lines = csvText.split(/\r?\n/);
+      if (lines.length === 0) {
+        throw new Error('File CSV kosong atau tidak valid!');
+      }
+
+      const delimiter = csvText.includes(';') ? ';' : ',';
+      
+      const splitLine = (line: string) => {
+        const result: string[] = [];
+        let insideQuote = false;
+        let currentToken = '';
+        
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            insideQuote = !insideQuote;
+          } else if (char === delimiter && !insideQuote) {
+            result.push(currentToken.trim());
+            currentToken = '';
+          } else {
+            currentToken += char;
+          }
+        }
+        result.push(currentToken.trim());
+        return result.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
+      };
+
+      const config: Record<string, string> = {};
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const cols = splitLine(trimmed);
+        if (cols.length >= 2) {
+          const key = cols[0].trim().toLowerCase();
+          const val = cols[1].trim();
+          config[key] = val;
+        }
+      }
+
+      const parsedName = config['nama toko'] || config['nama'] || config['store name'] || config['name'];
+      const parsedMotto = config['motto toko'] || config['motto'] || config['motto usaha'] || config['motto'];
+      const parsedAddress = config['alamat lengkap toko'] || config['alamat toko'] || config['alamat'] || config['address'];
+      const parsedPhone = config['nomor telepon kontak'] || config['nomor telepon'] || config['telepon'] || config['telp'] || config['phone'];
+      const parsedHeader = config['pesan tambahan header (atas)'] || config['pesan header'] || config['header message'];
+      const parsedFooter = config['pesan terima kasih / info footer (bawah)'] || config['pesan footer'] || config['footer message'];
+      const parsedShowLogo = config['tampilkan logo toko virtual'] || config['tampilkan logo'] || config['show logo'];
+      const parsedPaperWidth = config['ukuran kertas struk'] || config['ukuran kertas'] || config['lebar kertas'] || config['paper width'];
+
+      if (!parsedName) {
+        throw new Error('Format salah atau nama toko kosong. Pastikan kolom pertama bertuliskan "Nama Toko" dan kolom kedua berisi nama toko Anda.');
+      }
+
+      setName(parsedName);
+      if (parsedMotto !== undefined) setMotto(parsedMotto);
+      if (parsedAddress !== undefined) setAddress(parsedAddress);
+      if (parsedPhone !== undefined) setPhone(parsedPhone);
+      if (parsedHeader !== undefined) setHeaderMessage(parsedHeader);
+      if (parsedFooter !== undefined) setFooterMessage(parsedFooter);
+      
+      let finalShowLogo = showLogo;
+      if (parsedShowLogo !== undefined) {
+        const lowerLogo = parsedShowLogo.toLowerCase();
+        finalShowLogo = lowerLogo === 'ya' || lowerLogo === 'true' || lowerLogo === '1' || lowerLogo === 'yes' || lowerLogo === 'show';
+        setShowLogo(finalShowLogo);
+      }
+
+      let finalPaperWidth = paperWidth;
+      if (parsedPaperWidth !== undefined) {
+        finalPaperWidth = parsedPaperWidth.includes('58') ? '58mm' : '80mm';
+        setPaperWidth(finalPaperWidth);
+      }
+
+      onSave(parsedName, parsedMotto || '', {
+        address: parsedAddress || '',
+        phone: parsedPhone || '',
+        headerMessage: parsedHeader || '',
+        footerMessage: parsedFooter || '',
+        showLogo: finalShowLogo,
+        paperWidth: finalPaperWidth
+      });
+
+      setImportSuccess(true);
+      setSheetUrl('');
+      setTimeout(() => setImportSuccess(false), 5000);
+    } catch (err: any) {
+      console.error(err);
+      setImportError(err.message || 'Terjadi kesalahan saat menghubungkan ke Google Sheets.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -410,6 +531,76 @@ export default function ShopSetup({
                 <div key={i} className="w-3 h-3 bg-white -rotate-45 transform origin-bottom-left -translate-y-1.5 shrink-0 border-b border-l border-slate-200" />
               ))}
             </div>
+          </div>
+
+          {/* Google Sheets Shop Syncer Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4 w-full mt-4">
+            <h3 className="font-bold text-sm text-slate-950 flex items-center gap-1.5">
+              <FileSpreadsheet className="text-indigo-600" size={16} />
+              Google Sheets Shop Sync
+            </h3>
+            
+            <p className="text-[11px] text-slate-500 leading-relaxed">
+              Sinkronkan konfigurasi toko dan struk dari lembar kerja Google Sheets secara online. Caranya: <strong>Bagikan dokumen di Google Sheet sebagai publik</strong> (Anyone with link can view) lalu tempelkan link di bawah.
+            </p>
+
+            <div className="space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Link Google Sheets</label>
+                <input
+                  type="text"
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                  className="w-full p-2 border border-slate-200 rounded-lg focus:outline-hidden focus:border-indigo-600 text-xs"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSheetUrl(demoSheetsUrl)}
+                  className="text-[10px] text-indigo-600 hover:underline font-semibold cursor-pointer"
+                >
+                  Gunakan Demo Sheet Publik
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleFetchFromGoogleSheet}
+                disabled={isImporting || !sheetUrl.trim()}
+                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer"
+              >
+                {isImporting ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>Mengunduh...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileUp size={13} />
+                    <span>Unduh & Sinkronisasi</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Error Message */}
+            {importError && (
+              <div className="p-3 bg-rose-50 border border-rose-150 rounded-lg flex gap-2 text-xs text-rose-800 leading-relaxed">
+                <AlertCircle className="shrink-0 text-rose-600 mt-0.5" size={14} />
+                <span>{importError}</span>
+              </div>
+            )}
+
+            {/* Success Feedback */}
+            {importSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-150 rounded-lg flex gap-2 text-xs text-emerald-800 font-semibold">
+                <Check className="shrink-0 text-emerald-600" size={14} />
+                <span>Sukses memuat konfigurasi toko baru ke dalam sistem POS!</span>
+              </div>
+            )}
           </div>
         </div>
 

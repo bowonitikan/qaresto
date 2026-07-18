@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Product, Category } from '../types';
 import { formatIDR } from '../utils';
-import { Package, Search, Plus, Trash2, Edit2, Check, RefreshCcw, AlertTriangle, ChevronDown, Sparkles, Download } from 'lucide-react';
+import { Package, Search, Plus, Trash2, Edit2, Check, RefreshCcw, AlertTriangle, ChevronDown, Sparkles, Download, Upload } from 'lucide-react';
 
 interface StockManagerProps {
   products: Product[];
@@ -9,6 +9,7 @@ interface StockManagerProps {
   onEditProduct: (id: string, updated: Partial<Product>) => void;
   onAddProduct: (product: Omit<Product, 'id'>) => void;
   onDeleteProduct: (id: string) => void;
+  onImportProducts: (products: Omit<Product, 'id'>[]) => void;
   currentUserRole: 'admin' | 'cashier';
 }
 
@@ -18,6 +19,7 @@ export default function StockManager({
   onEditProduct,
   onAddProduct,
   onDeleteProduct,
+  onImportProducts,
   currentUserRole
 }: StockManagerProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -123,6 +125,105 @@ export default function StockManager({
     document.body.removeChild(link);
   };
 
+  const parseCSVRow = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const cleanCSVField = (field: string): string => {
+    let cleaned = field.trim();
+    if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+      cleaned = cleaned.slice(1, -1);
+    }
+    return cleaned.replace(/""/g, '"');
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/);
+      if (lines.length <= 1) {
+        alert('File CSV kosong atau tidak valid!');
+        return;
+      }
+
+      const parsedProducts: Omit<Product, 'id'>[] = [];
+      const headerFields = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
+
+      const nameIdx = headerFields.findIndex(h => h.includes('nama') || h.includes('name'));
+      const catIdx = headerFields.findIndex(h => h.includes('kategori') || h.includes('category'));
+      const priceIdx = headerFields.findIndex(h => h.includes('harga') || h.includes('price'));
+      const stockIdx = headerFields.findIndex(h => h.includes('stok') || h.includes('stock'));
+      const minStockIdx = headerFields.findIndex(h => h.includes('minimum') || h.includes('min'));
+      const descIdx = headerFields.findIndex(h => h.includes('deskripsi') || h.includes('description') || h.includes('desc'));
+
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const fields = parseCSVRow(line).map(cleanCSVField);
+        if (fields.length === 0) continue;
+
+        const name = fields[nameIdx !== -1 ? nameIdx : 1] || fields[0] || 'Menu Tanpa Nama';
+        const categoryVal = fields[catIdx !== -1 ? catIdx : 2] || 'Coffee';
+        const priceStr = fields[priceIdx !== -1 ? priceIdx : 3] || '10000';
+        const stockStr = fields[stockIdx !== -1 ? stockIdx : 4] || '0';
+        const minStockStr = fields[minStockIdx !== -1 ? minStockIdx : 5] || '5';
+        const description = fields[descIdx !== -1 ? descIdx : 6] || 'Diimpor dari CSV.';
+
+        const price = parseInt(priceStr.replace(/[^0-9]/g, '')) || 10000;
+        const stock = parseInt(stockStr.replace(/[^0-9]/g, '')) || 0;
+        const minStock = parseInt(minStockStr.replace(/[^0-9]/g, '')) || 5;
+
+        let category: Category = 'Coffee';
+        const cleanCat = categoryVal.toLowerCase();
+        if (cleanCat.includes('beverage') || cleanCat.includes('minum')) category = 'Beverages';
+        else if (cleanCat.includes('food') || cleanCat.includes('makan')) category = 'Food';
+        else if (cleanCat.includes('snack') || cleanCat.includes('camilan')) category = 'Snacks';
+        else if (cleanCat.includes('dessert') || cleanCat.includes('pencuci')) category = 'Desserts';
+        else if (cleanCat.includes('coffee') || cleanCat.includes('kopi')) category = 'Coffee';
+
+        parsedProducts.push({
+          name,
+          price,
+          category,
+          imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=400',
+          stock,
+          minStock,
+          description
+        });
+      }
+
+      if (parsedProducts.length > 0) {
+        onImportProducts(parsedProducts);
+      } else {
+        alert('Tidak ada item valid yang ditemukan dalam file CSV.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   return (
     <div id="stock-manager-container" className="space-y-6">
       
@@ -141,6 +242,19 @@ export default function StockManager({
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
+          {isAdmin && (
+            <label className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 px-3.5 py-2 rounded-xl text-sm font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer">
+              <Upload size={16} />
+              <span>Import CSV</span>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleImportCSV}
+                className="hidden"
+              />
+            </label>
+          )}
+
           <button
             onClick={handleExportCSV}
             className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-sm font-semibold shadow-xs hover:shadow-md transition-all cursor-pointer"

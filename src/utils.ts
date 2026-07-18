@@ -58,8 +58,8 @@ export function getGoogleSheetsExportUrl(inputUrl: string): string {
 
 // Parse CSV text string into array of Customer objects
 export function parseCustomerCSV(csvText: string): Customer[] {
-  const lines = csvText.split(/\r?\n/);
-  if (lines.length < 2) return [];
+  const lines = csvText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  if (lines.length === 0) return [];
 
   // Determine delimiter (comma or semicolon)
   const firstLine = lines[0];
@@ -83,26 +83,66 @@ export function parseCustomerCSV(csvText: string): Customer[] {
       }
     }
     result.push(currentToken.trim());
-    return result.map(v => v.replace(/^"|"$/g, ''));
+    return result.map(v => v.replace(/^"|"$/g, '').replace(/""/g, '"'));
   };
 
   const headers = splitLine(lines[0]).map(h => h.toLowerCase());
   const customers: Customer[] = [];
 
-  // Find header index mappings
-  const nameIdx = headers.findIndex(h => h.includes('nama') || h.includes('name'));
-  const phoneIdx = headers.findIndex(h => h.includes('telp') || h.includes('phone') || h.includes('hp'));
-  const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('surel'));
-  const prefIdx = headers.findIndex(h => h.includes('preferensi') || h.includes('pref') || h.includes('catatan') || h.includes('note'));
+  // Find header index mappings (supporting various English, Indonesian & generic field aliases)
+  const nameIdx = headers.findIndex(h => 
+    h.includes('nama') || 
+    h.includes('name') || 
+    h.includes('pelanggan') || 
+    h.includes('customer') || 
+    h.includes('member') || 
+    h.includes('anggota') || 
+    h.includes('user') ||
+    h.includes('client') ||
+    h.includes('klien') ||
+    h.includes('nama pelanggan')
+  );
+  
+  const phoneIdx = headers.findIndex(h => 
+    h.includes('telp') || 
+    h.includes('phone') || 
+    h.includes('hp') || 
+    h.includes('kontak') || 
+    h.includes('contact') || 
+    h.includes('telepon') || 
+    h.includes('wa') || 
+    h.includes('whatsapp')
+  );
+  
+  const emailIdx = headers.findIndex(h => 
+    h.includes('email') || 
+    h.includes('surel') || 
+    h.includes('mail')
+  );
+  
+  const prefIdx = headers.findIndex(h => 
+    h.includes('preferensi') || 
+    h.includes('pref') || 
+    h.includes('catatan') || 
+    h.includes('note') || 
+    h.includes('keterangan') || 
+    h.includes('desc') || 
+    h.includes('description')
+  );
 
-  for (let i = 1; i < lines.length; i++) {
+  // Parse lines starting from the second row (if headers detected)
+  const hasValidHeader = nameIdx !== -1;
+  const startIndex = hasValidHeader ? 1 : 0;
+
+  for (let i = startIndex; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
     
     const cols = splitLine(line);
-    if (cols.length === 0 || !cols[nameIdx === -1 ? 0 : nameIdx]) continue;
-
-    const name = cols[nameIdx !== -1 ? nameIdx : 0] || 'Tanpa Nama';
+    if (cols.length === 0) continue;
+    
+    const targetIdx = nameIdx === -1 ? 0 : nameIdx;
+    const name = cols[targetIdx] || 'Tanpa Nama';
     const phone = cols[phoneIdx !== -1 ? phoneIdx : 1] || '-';
     const email = cols[emailIdx !== -1 ? emailIdx : 2] || '';
     const preferences = cols[prefIdx !== -1 ? prefIdx : 3] || 'Tidak ada preferensi khusus';
@@ -118,6 +158,46 @@ export function parseCustomerCSV(csvText: string): Customer[] {
       totalSpent: 0,
       joinDate: new Date().toISOString().split('T')[0]
     });
+  }
+
+  // Resilient fallback: If parsing failed completely, parse every line as values directly
+  if (customers.length === 0) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const cols = splitLine(line);
+      if (cols.length === 0 || !cols[0]) continue;
+      
+      // Skip the line only if it matches typical headers
+      const firstColLower = cols[0].toLowerCase();
+      if (
+        firstColLower === 'nama' || 
+        firstColLower === 'name' || 
+        firstColLower === 'nama pelanggan' || 
+        firstColLower === 'customer name' || 
+        firstColLower === 'pelanggan'
+      ) {
+        if (lines.length > 1) continue;
+      }
+
+      const name = cols[0] || 'Tanpa Nama';
+      const phone = cols[1] || '-';
+      const email = cols[2] || '';
+      const preferences = cols[3] || 'Tidak ada preferensi khusus';
+
+      customers.push({
+        id: `c_import_hl_${Math.random().toString(36).substring(2, 9)}`,
+        name,
+        phone,
+        email,
+        preferences,
+        points: 10,
+        orderCount: 0,
+        totalSpent: 0,
+        joinDate: new Date().toISOString().split('T')[0]
+      });
+    }
   }
 
   return customers;
