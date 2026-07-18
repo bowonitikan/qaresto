@@ -92,30 +92,107 @@ export default function App() {
   // Navigation tabs: 'kasir' | 'stok' | 'pelanggan' | 'laporan' | 'pengguna' | 'setup' | 'promo'
   const [activeTab, setActiveTab] = useState<'kasir' | 'stok' | 'pelanggan' | 'laporan' | 'pengguna' | 'setup' | 'promo'>('kasir');
 
-  // Core App states
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
-  const [promos, setPromos] = useState<Promo[]>(INITIAL_PROMOS);
-  const [orders, setOrders] = useState<Order[]>(PRE_POPULATED_ORDERS);
-  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[1]); // Default to first cashier
+  // Core App states with LocalStorage persistence
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('qapos_products');
+    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+  });
+  const [customers, setCustomers] = useState<Customer[]>(() => {
+    const saved = localStorage.getItem('qapos_customers');
+    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
+  });
+  const [promos, setPromos] = useState<Promo[]>(() => {
+    const saved = localStorage.getItem('qapos_promos');
+    return saved ? JSON.parse(saved) : INITIAL_PROMOS;
+  });
+  const [orders, setOrders] = useState<Order[]>(() => {
+    const saved = localStorage.getItem('qapos_orders');
+    return saved ? JSON.parse(saved) : PRE_POPULATED_ORDERS;
+  });
+  const [users, setUsers] = useState<User[]>(() => {
+    const saved = localStorage.getItem('qapos_users');
+    return saved ? JSON.parse(saved) : INITIAL_USERS;
+  });
+  const [currentUser, setCurrentUser] = useState<User>(() => {
+    const savedUsers = localStorage.getItem('qapos_users');
+    const loadedUsers: User[] = savedUsers ? JSON.parse(savedUsers) : INITIAL_USERS;
+    const savedCur = localStorage.getItem('qapos_currentUser');
+    if (savedCur) {
+      try {
+        const parsed = JSON.parse(savedCur);
+        const matched = loadedUsers.find(u => u.id === parsed.id);
+        if (matched) return matched;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return loadedUsers[1] || INITIAL_USERS[1];
+  });
   const [isLocked, setIsLocked] = useState<boolean>(true); // Terminal locked on start
-  const [selectedLockUser, setSelectedLockUser] = useState<User>(INITIAL_USERS[1]); // Selected profile in lock screen
+  const [selectedLockUser, setSelectedLockUser] = useState<User>(() => {
+    const savedUsers = localStorage.getItem('qapos_users');
+    const loadedUsers: User[] = savedUsers ? JSON.parse(savedUsers) : INITIAL_USERS;
+    return loadedUsers[1] || INITIAL_USERS[1];
+  });
   const [lockPin, setLockPin] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
 
-  // Restaurant settings states
-  const [restaurantName, setRestaurantName] = useState<string>('Resto Makmur Lezat');
-  const [restaurantMotto, setRestaurantMotto] = useState<string>('Sajian Lezat, Pelayanan Hangat');
-  const [receiptConfig, setReceiptConfig] = useState({
-    address: 'Jl. Kuliner No. 123, Bandung',
-    phone: '(022) 8765-4321',
-    headerMessage: 'SELAMAT MENIKMATI hidangan istimewa kami!',
-    footerMessage: 'Kritik & Saran Hubungi: admin@restomakmur.com',
-    showLogo: true,
-    paperWidth: '80mm' as '80mm' | '58mm'
+  // Restaurant settings states with LocalStorage persistence
+  const [restaurantName, setRestaurantName] = useState<string>(() => {
+    return localStorage.getItem('qapos_restaurantName') || 'Resto Makmur Lezat';
   });
+  const [restaurantMotto, setRestaurantMotto] = useState<string>(() => {
+    return localStorage.getItem('qapos_restaurantMotto') || 'Sajian Lezat, Pelayanan Hangat';
+  });
+  const [receiptConfig, setReceiptConfig] = useState(() => {
+    const saved = localStorage.getItem('qapos_receiptConfig');
+    return saved ? JSON.parse(saved) : {
+      address: 'Jl. Kuliner No. 123, Bandung',
+      phone: '(022) 8765-4321',
+      headerMessage: 'SELAMAT MENIKMATI hidangan istimewa kami!',
+      footerMessage: 'Kritik & Saran Hubungi: admin@restomakmur.com',
+      showLogo: true,
+      paperWidth: '80mm' as '80mm' | '58mm'
+    };
+  });
+
+  // Sync state modifications to localStorage via useEffect
+  useEffect(() => {
+    localStorage.setItem('qapos_products', JSON.stringify(products));
+  }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_customers', JSON.stringify(customers));
+  }, [customers]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_promos', JSON.stringify(promos));
+  }, [promos]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_orders', JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_currentUser', JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_restaurantName', restaurantName);
+  }, [restaurantName]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_restaurantMotto', restaurantMotto);
+  }, [restaurantMotto]);
+
+  useEffect(() => {
+    localStorage.setItem('qapos_receiptConfig', JSON.stringify(receiptConfig));
+  }, [receiptConfig]);
 
   const [aboutOpen, setAboutOpen] = useState(false);
 
