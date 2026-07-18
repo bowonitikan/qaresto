@@ -1,0 +1,6 @@
+{
+  "name": "POS Kasir Restoran",
+  "description": "Aplikasi POS Kasir restoran responsif dengan pelacakan stok, mode offline, manajemen pelanggan, sinkronisasi Google Sheets, dan laporan keuangan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
