@@ -924,8 +924,19 @@ export default function App() {
                       rel="noopener noreferrer"
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all cursor-pointer"
                     >
-                      <BookOpen size={16} className="text-emerald-650" />
-                      <span>Dokumentasi HTML</span>
+                      <BookOpen size={16} className="text-emerald-600" />
+                      <span>Dokumentasi Sistem</span>
+                    </a>
+
+                    {/* Operational Marketing Guide button */}
+                    <a
+                      href="/panduan_operasional.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-indigo-600 hover:bg-indigo-50 hover:text-indigo-750 transition-all cursor-pointer"
+                    >
+                      <Store size={16} className="text-indigo-600" />
+                      <span>Buku Panduan Promosi (Bebas Kredensial)</span>
                     </a>
 
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block px-3 pt-4 mb-2">Keamanan</span>
@@ -1118,15 +1129,27 @@ export default function App() {
                 </p>
                 
                 {/* Link to view HTML documentation */}
-                <a
-                  href="/dokumentasi.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-2 bg-indigo-650 hover:bg-indigo-750 text-white font-extrabold px-5 py-2.5 rounded-2xl text-[11px] uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95 cursor-pointer border border-indigo-500/30"
-                >
-                  <BookOpen size={13} />
-                  <span>Buku Panduan & Dokumentasi</span>
-                </a>
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full justify-center">
+                  <a
+                    href="/dokumentasi.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-all shadow-xs hover:shadow-md hover:scale-102 active:scale-98 cursor-pointer"
+                  >
+                    <BookOpen size={12} />
+                    <span>Buku Panduan Utama</span>
+                  </a>
+                  
+                  <a
+                    href="/panduan_operasional.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold px-4 py-2 rounded-xl text-[11px] uppercase tracking-wider transition-all shadow-xs hover:shadow-md hover:scale-102 active:scale-98 cursor-pointer"
+                  >
+                    <Store size={12} />
+                    <span>Brosur & Panduan Promosi</span>
+                  </a>
+                </div>
               </div>
 
               {/* Divider line */}

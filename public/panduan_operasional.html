@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panduan Operasional & Fitur Unggulan QA POS</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            outfit: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    html {
+      scroll-behavior: smooth;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+    /* Dynamic floating visual decoration */
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0px); }
+    }
+    .float-element {
+      animation: float 4s ease-in-out infinite;
+    }
+    .shimmer-bg {
+      background: linear-gradient(120deg, #4f46e5 25%, #818cf8 45%, #4f46e5 50%, #818cf8 55%, #4f46e5 75%);
+      background-size: 200% auto;
+      color: transparent;
+      background-clip: text;
+      -webkit-background-clip: text;
+      animation: shine 4s linear infinite;
+    }
+    @keyframes shine {
+      to { background-position: -200% center; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200 antialiased font-sans">
+
+  <!-- Navbar -->
+  <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md dark:border-slate-800">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 text-white p-2.5 rounded-xl font-black text-xs tracking-tight shadow-md flex items-center justify-center">
+          <i data-lucide="store" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight font-outfit text-slate-900 dark:text-white">QA POS</h1>
+          <p class="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono font-bold uppercase tracking-wider">Operational & Marketing Guide</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <!-- Dark/Light Mode toggle -->
+        <button 
+          id="theme-toggle" 
+          aria-label="Ubah tema" 
+          class="p-2 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-all cursor-pointer text-slate-500 dark:text-slate-400"
+        >
+          <i data-lucide="sun" id="sun-icon" class="w-4 h-4 hidden"></i>
+          <i data-lucide="moon" id="moon-icon" class="w-4 h-4"></i>
+        </button>
+
+        <a 
+          href="/" 
+          class="text-xs font-bold bg-indigo-650 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-1.5"
+        >
+          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+          <span>Buka Aplikasi</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Promotional Section -->
+  <section class="relative bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white overflow-hidden py-16 sm:py-24">
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]"></div>
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none float-element"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none float-element" style="animation-delay: 2s;"></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
+      <div class="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-indigo-300">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+        <span>Solusi Kasir & CRM UMKM Masa Kini</span>
+      </div>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black font-outfit tracking-tight max-w-4xl mx-auto leading-tight">
+        Aplikasi Kasir <span class="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">QA POS</span> untuk Efisiensi Bisnis Anda
+      </h1>
+      <p class="text-sm sm:text-base text-slate-300 max-w-3xl mx-auto leading-relaxed">
+        Sistem Point-of-Sale (POS) modern berkecepatan tinggi dengan fitur sinkronisasi offline mandiri, cetak struk kertas thermal Bluetooth/Desktop, manajemen kupon diskon, dan integrasi database keanggotaan pelanggan berbasis CRM.
+      </p>
+
+      <div class="flex flex-wrap justify-center gap-4 pt-4">
+        <a 
+          href="#fitur-utama" 
+          class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-indigo-500/20 flex items-center gap-2"
+        >
+          <i data-lucide="eye" class="w-4 h-4"></i>
+          <span>Pelajari Fitur</span>
+        </a>
+        <a 
+          href="https://wa.me/6288806667171" 
+          target="_blank"
+          class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-emerald-500/20 flex items-center gap-2"
+        >
+          <i data-lucide="phone-call" class="w-4 h-4"></i>
+          <span>Hubungi Tim Sales WA</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promo Highlights / Benefits -->
+  <section class="py-12 bg-white dark:bg-slate-900 border-b border-slate-150 dark:border-slate-800">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-center">
+        <div class="p-5 space-y-2 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="w-10 h-10 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl mx-auto flex items-center justify-center font-bold">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white pt-2">Kinerja Ultra-Cepat</h3>
+          <p class="text-xs text-slate-500">Mencatat pesanan, menghitung promo, dan memproses struk tanpa buffering.</p>
+        </div>
+        <div class="p-5 space-y-2 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="w-10 h-10 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl mx-auto flex items-center justify-center font-bold">
+            <i data-lucide="wifi-off" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white pt-2">Offline-Ready</h3>
+          <p class="text-xs text-slate-500">Tetap bekerja lancar tanpa internet, otomatis menyinkronkan data saat online.</p>
+        </div>
+        <div class="p-5 space-y-2 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="w-10 h-10 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl mx-auto flex items-center justify-center font-bold">
+            <i data-lucide="users" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white pt-2">CRM Terintegrasi</h3>
+          <p class="text-xs text-slate-500">Database pelanggan yang menghitung poin loyalti per transaksi secara otomatis.</p>
+        </div>
+        <div class="p-5 space-y-2 border border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="w-10 h-10 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl mx-auto flex items-center justify-center font-bold">
+            <i data-lucide="lock" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white pt-2">Akses Terlindungi</h3>
+          <p class="text-xs text-slate-500">Membatasi kasir biasa dari akses laporan keuangan yang bersifat rahasia.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Detailed Section -->
+  <section id="fitur-utama" class="py-16 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-16">
+    <div class="text-center max-w-2xl mx-auto space-y-2">
+      <h2 class="text-2xl sm:text-3xl font-extrabold font-outfit text-slate-900 dark:text-white">Mengapa UMKM Memilih QA POS?</h2>
+      <p class="text-xs sm:text-sm text-slate-500">Berikut adalah eksplorasi mendalam fitur cerdas yang siap melipatgandakan produktivitas operasional harian gerai Anda.</p>
+    </div>
+
+    <!-- Interactive Tabs Component for Features -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs space-y-8">
+      <div class="flex flex-wrap border-b border-slate-150 dark:border-slate-800 pb-2 gap-2">
+        <button onclick="switchTab('terminal')" id="btn-terminal" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold transition-all border-b-2 border-indigo-600 bg-indigo-50 text-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-400 flex items-center gap-2 cursor-pointer">
+          <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+          <span>1. Terminal Kasir POS</span>
+        </button>
+        <button onclick="switchTab('offline')" id="btn-offline" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all border-b-2 border-transparent flex items-center gap-2 cursor-pointer">
+          <i data-lucide="wifi-off" class="w-4 h-4"></i>
+          <span>2. Keunggulan Offline</span>
+        </button>
+        <button onclick="switchTab('printer')" id="btn-printer" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all border-b-2 border-transparent flex items-center gap-2 cursor-pointer">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+          <span>3. Setup Toko & Printer</span>
+        </button>
+        <button onclick="switchTab('crm')" id="btn-crm" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all border-b-2 border-transparent flex items-center gap-2 cursor-pointer">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span>4. CRM & Database Pelanggan</span>
+        </button>
+        <button onclick="switchTab('finance')" id="btn-finance" class="tab-btn px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all border-b-2 border-transparent flex items-center gap-2 cursor-pointer">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span>5. Laporan & Keamanan</span>
+        </button>
+      </div>
+
+      <!-- Tab Contents -->
+      <!-- Terminal Tab -->
+      <div id="tab-content-terminal" class="tab-panel space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Proses Cepat & Responsif</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Antarmuka Pemesanan Intuitif Berkecepatan Tinggi</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Didesain dengan tata letak minimalis dan efisien, kasir Anda dapat memasukkan pesanan dengan satu ketukan. Produk dikelompokkan dengan rapi berdasarkan kategori (Makanan, Minuman, Cemilan, Kopi, Desserts) lengkap dengan foto katalog yang menggugah selera.
+            </p>
+            <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-indigo-600 mt-0.5 shrink-0"></i>
+                <span><strong>Pemberian Catatan Kustom</strong>: Tambahkan catatan khusus per porsi pesanan pelanggan secara langsung (misal: "Es dikurangi", "Ekstra pedas").</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-indigo-600 mt-0.5 shrink-0"></i>
+                <span><strong>Perhitungan Promo Otomatis</strong>: Diskon dihitung secara dinamis ketika kode promo dimasukkan atau banner teks diklik oleh kasir.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-indigo-600 mt-0.5 shrink-0"></i>
+                <span><strong>Multi-Metode Pembayaran</strong>: Mendukung transaksi menggunakan Uang Tunai (Cash), scan kode QRIS, maupun kartu Debit/Kredit secara fleksibel.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="bg-indigo-50/50 dark:bg-slate-950/60 rounded-3xl p-6 border border-indigo-100 dark:border-slate-850 flex flex-col justify-center space-y-4">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-3">
+              <div class="flex justify-between items-center text-xs font-bold border-b border-slate-100 dark:border-slate-800 pb-2">
+                <span>Keranjang Belanja Aktif</span>
+                <span class="text-indigo-600 dark:text-indigo-400">3 Items</span>
+              </div>
+              <div class="space-y-2 text-[11px] text-slate-600 dark:text-slate-400 font-mono">
+                <div class="flex justify-between">
+                  <span>1x Kopi Susu Aren Gula Merah</span>
+                  <span>Rp 18.000</span>
+                </div>
+                <div class="flex justify-between text-indigo-600 dark:text-indigo-400">
+                  <span class="pl-2 italic">* Catatan: Pedas sedang</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>2x Ayam Goreng Kalasan Madu</span>
+                  <span>Rp 56.000</span>
+                </div>
+                <div class="flex justify-between font-bold text-slate-900 dark:text-white border-t border-dashed border-slate-200 dark:border-slate-800 pt-2">
+                  <span>Subtotal</span>
+                  <span>Rp 74.000</span>
+                </div>
+                <div class="flex justify-between text-rose-500 font-bold">
+                  <span>Diskon Promo (JUMAT15)</span>
+                  <span>-Rp 11.100</span>
+                </div>
+                <div class="flex justify-between font-black text-slate-950 dark:text-white border-t border-slate-200 dark:border-slate-800 pt-2 text-xs">
+                  <span>Total Tagihan</span>
+                  <span>Rp 62.900</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Offline Tab -->
+      <div id="tab-content-offline" class="tab-panel space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="bg-emerald-100 dark:bg-emerald-950/50 text-emerald-750 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Keandalan Luar Biasa</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Operasional Stabil & Tanpa Takut Internet Putus</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Arsitektur offline-first menjamin kelangsungan bisnis Anda. Jika jaringan Wi-Fi toko Anda tiba-tiba padam, kasir tetap dapat melayani antrean pembeli, menghitung total belanja, memotong stok barang lokal secara real-time, dan memproses cetak struk tanpa hambatan apa pun.
+            </p>
+            <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+                <span><strong>Antrean Offline Lokal</strong>: Seluruh transaksi disimpan dengan aman di penyimpanan lokal peramban (<code class="font-mono bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-xs font-bold">localStorage</code>) sehingga aman dari risiko kehilangan data meskipun browser tidak sengaja dimuat ulang.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+                <span><strong>Sinkronisasi Latar Belakang Otomatis</strong>: Saat koneksi internet kembali pulih, aplikasi POS langsung mendeteksi jaringan dan menyinkronkan seluruh antrean transaksi ke database pusat secara mulus dalam hitungan detik.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="bg-emerald-50/50 dark:bg-slate-950/60 rounded-3xl p-6 border border-emerald-100 dark:border-slate-850 space-y-4 flex flex-col justify-center">
+            <div class="border border-emerald-200 dark:border-emerald-900 bg-white dark:bg-slate-900 rounded-2xl p-4 flex items-center gap-4 shadow-xs">
+              <div class="bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 p-3 rounded-full animate-pulse">
+                <i data-lucide="wifi" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-slate-900 dark:text-white">Status Jaringan Terhubung</h4>
+                <p class="text-[11px] text-slate-500 font-mono">Semua transaksi disinkronkan dengan mulus (0 Tertunda)</p>
+              </div>
+            </div>
+            <div class="border border-rose-200 dark:border-rose-950 bg-white dark:bg-slate-900 rounded-2xl p-4 flex items-center gap-4 shadow-xs">
+              <div class="bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 p-3 rounded-full">
+                <i data-lucide="wifi-off" class="w-6 h-6"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-xs text-slate-900 dark:text-white">Mode Offline Aktif (Simulasi)</h4>
+                <p class="text-[11px] text-rose-500 font-mono font-bold">Menyimpan sementara dalam Local Queue</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Printer Tab -->
+      <div id="tab-content-printer" class="tab-panel space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="bg-amber-100 dark:bg-amber-950/50 text-amber-750 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Kustomisasi Penuh</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Cetak Struk Thermal Bluetooth & Desktop</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Bebas sesuaikan branding restoran Anda langsung di struk penjualan. Melalui halaman pengaturan toko yang elegan, Anda dapat menyunting nama resto, nomor telepon gerai, motto promosi, hingga tulisan ucapan terima kasih di bagian bawah struk kasir.
+            </p>
+            <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0"></i>
+                <span><strong>Dukungan Ukuran 58mm & 80mm</strong>: Menjamin hasil cetak tercetak sempurna tanpa kepotong baik pada printer bluetooth saku portabel (58mm) maupun printer desktop kasir profesional (80mm).</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0"></i>
+                <span><strong>Sistem Kalkulasi Biaya & Pajak Daerah</strong>: Atur sendiri persentase pengenaan biaya layanan tambahan (Service Charge) dan PB1 / PPN daerah sesuai dengan regulasi operasional gerai Anda.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="bg-amber-50/50 dark:bg-slate-950/60 rounded-3xl p-6 border border-amber-100 dark:border-slate-850 flex items-center justify-center">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 w-64 shadow-xs text-[10px] font-mono text-slate-700 dark:text-slate-300 space-y-2 relative">
+              <div class="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-2 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+              <div class="text-center font-bold text-slate-950 dark:text-white text-xs">RESTO MAKMUR LEZAT</div>
+              <div class="text-center">Jl. Kuliner No. 123, Bandung</div>
+              <div class="text-center border-b border-dashed border-slate-200 dark:border-slate-800 pb-1">Telp: (022) 8765-4321</div>
+              <div class="space-y-1 pt-1">
+                <div class="flex justify-between">
+                  <span>1x Kopi Susu Aren</span>
+                  <span>18.000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>2x Ayam Kalasan</span>
+                  <span>56.000</span>
+                </div>
+                <div class="border-t border-dashed border-slate-200 dark:border-slate-800 pt-1 flex justify-between font-bold">
+                  <span>Total</span>
+                  <span>74.000</span>
+                </div>
+                <div class="flex justify-between text-rose-600 font-bold">
+                  <span>Diskon (15%)</span>
+                  <span>-11.100</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>PB1 / Pajak (10%)</span>
+                  <span>6.290</span>
+                </div>
+                <div class="flex justify-between font-black text-slate-950 dark:text-white border-t border-solid border-slate-300 dark:border-slate-800 pt-1 text-[11px]">
+                  <span>BAYAR (QRIS)</span>
+                  <span>69.190</span>
+                </div>
+              </div>
+              <div class="text-center border-t border-dashed border-slate-200 dark:border-slate-800 pt-1 text-[8px] text-slate-500">
+                Terima Kasih Atas Kunjungan Anda!
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CRM Tab -->
+      <div id="tab-content-crm" class="tab-panel space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="bg-green-100 dark:bg-green-950/50 text-green-750 dark:text-green-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Retensi Pelanggan Setia</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Sistem Keanggotaan & Loyalty Points CRM</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Dapatkan pelanggan loyal yang selalu rindu berkunjung kembali. QA POS dilengkapi modul CRM terintegrasi untuk mendata member pelanggan, melacak total riwayat belanja mereka, mencatat preferensi menu kuliner kesukaan, serta memberikan poin loyalitas secara otomatis dalam setiap transaksi.
+            </p>
+            <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-green-600 mt-0.5 shrink-0"></i>
+                <span><strong>Import Database Masal via Google Sheets / Excel</strong>: Cukup unggah file CSV eksternal Anda sesuai format kolom yang simpel untuk menyelaraskan ribuan nama member instan ke kasir POS.</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-green-600 mt-0.5 shrink-0"></i>
+                <span><strong>Kategori Tingkatan Member (Tiering)</strong>: Klasifikasikan member setia Anda ke dalam tingkatan Regular, Silver, atau Gold untuk membedakan keuntungan kupon diskon eksklusif.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="bg-green-50/50 dark:bg-slate-950/60 rounded-3xl p-6 border border-green-100 dark:border-slate-850 flex flex-col justify-center space-y-4">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-2">
+              <div class="flex items-center gap-3">
+                <div class="bg-amber-100 text-amber-600 p-2 rounded-xl font-bold text-xs font-mono">GOLD</div>
+                <div>
+                  <h4 class="font-extrabold text-xs text-slate-950 dark:text-white">Budi Santoso</h4>
+                  <p class="text-[10px] text-slate-500">Member ID: BUDI-15 | Telp: 081234567890</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] font-mono text-slate-500">
+                <div>Poin Terkumpul: <span class="text-emerald-600 font-black font-sans">120 Pts</span></div>
+                <div>Frekuensi Belanja: <span class="text-slate-900 dark:text-white font-black font-sans">12x</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Finance Tab -->
+      <div id="tab-content-finance" class="tab-panel space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <span class="bg-purple-100 dark:bg-purple-950/50 text-purple-750 dark:text-purple-400 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">Keamanan Data Keuangan</span>
+            <h3 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Proteksi Hak Akses & Laporan Keuangan</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Lindungi data sensitif usaha Anda dari kebocoran atau manipulasi. Sistem otorisasi bertingkat mengunci halaman analisis keuangan, omset omzet harian, sisa modal, serta modifikasi harga produk menu hanya untuk pemilik usaha (Administrator Utama).
+            </p>
+            <ul class="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-purple-600 mt-0.5 shrink-0"></i>
+                <span><strong>Enkripsi Perlindungan PIN</strong>: Setiap terminal dikunci menggunakan PIN unik 5 digit angka yang dapat diperbarui kapan saja di tab "Setup User Akses".</span>
+              </li>
+              <li class="flex items-start gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-purple-600 mt-0.5 shrink-0"></i>
+                <span><strong>Analitik Kurva & Diagram Dinamis</strong>: Owner dapat melihat visualisasi grafik performa pendapatan, perbandingan metode pembayaran, dan ranking item terlaris untuk mempermudah restock bahan baku.</span>
+              </li>
+            </ul>
+          </div>
+          <div class="bg-purple-50/50 dark:bg-slate-950/60 rounded-3xl p-6 border border-purple-100 dark:border-slate-850 flex flex-col justify-center space-y-4">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs space-y-3">
+              <span class="text-[9px] font-black uppercase text-slate-400 tracking-wider">Dashboard Owner</span>
+              <div class="text-xs font-bold text-slate-900 dark:text-white flex justify-between">
+                <span>Omset Bersih Hari Ini</span>
+                <span class="text-emerald-600 font-extrabold">+Rp 1.450.000</span>
+              </div>
+              <div class="h-1.5 w-full bg-slate-150 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div class="h-full bg-indigo-600 w-3/4 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Marketing Promotion Section / Action Banner -->
+  <section class="bg-slate-900 text-white py-16 text-center border-t border-slate-800">
+    <div class="mx-auto max-w-4xl px-4 space-y-6">
+      <h2 class="text-2xl sm:text-4xl font-extrabold font-outfit">Siap Menggunakan Aplikasi Kasir Masa Kini?</h2>
+      <p class="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        Bantu bisnis UMKM Anda berkembang lebih cepat, kurangi salah hitung transaksi kasir, dan miliki keandalan pelayanan offline yang tak tertandingi dengan QA POS.
+      </p>
+      
+      <div class="pt-4 flex flex-col sm:flex-row justify-center items-center gap-4">
+        <a 
+          href="/" 
+          class="px-8 py-3.5 bg-indigo-650 hover:bg-indigo-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:-translate-y-0.5"
+        >
+          Masuk ke Dashboard POS
+        </a>
+        <a 
+          href="https://wa.me/6288806667171" 
+          target="_blank"
+          class="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg hover:shadow-emerald-500/20 transition-all transform hover:-translate-y-0.5 flex items-center gap-2"
+        >
+          <i data-lucide="message-square" class="w-4 h-4"></i>
+          <span>Konsultasi Operasional</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section (Secure operational focus without credentials) -->
+  <section class="py-16 mx-auto max-w-3xl px-4 sm:px-6 space-y-8">
+    <div class="text-center space-y-2">
+      <h2 class="text-xl sm:text-2xl font-extrabold font-outfit text-slate-900 dark:text-white">Keamanan & Informasi Otoritas</h2>
+      <p class="text-xs text-slate-500">Tanya jawab singkat tentang mekanisme pendaftaran terminal kasir.</p>
+    </div>
+
+    <div class="space-y-4">
+      <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4">
+        <h3 class="font-extrabold text-xs text-slate-900 dark:text-white">Q: Bagaimana cara mendapatkan PIN masuk kasir dan administrator?</h3>
+        <p class="mt-2 text-xs text-slate-500 leading-relaxed">
+          A: Demi alasan kepatuhan keamanan data internal, seluruh PIN keamanan didistribusikan secara privat oleh pemilik atau pengelola gerai Anda. Untuk mendaftarkan PIN admin baru atau jika Anda lupa sandi PIN terminal, silakan menghubungi administrator resmi atau klik untuk WhatsApp ke pengembang di nomor <a href="https://wa.me/6288806667171" class="text-indigo-650 font-bold underline">6288806667171</a>.
+        </p>
+      </div>
+      <div class="border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 p-4">
+        <h3 class="font-extrabold text-xs text-slate-900 dark:text-white">Q: Apakah aplikasi ini berbayar atau memerlukan lisensi?</h3>
+        <p class="mt-2 text-xs text-slate-500 leading-relaxed">
+          A: QA POS dapat dicoba dan digunakan untuk membantu UMKM lokal Digital Aspikmas Kembaran naik kelas. Hubungi tim support WhatsApp kami untuk integrasi kustom khusus untuk gerai Anda.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 text-slate-500 border-t border-slate-900 py-12 text-center text-xs space-y-4 font-medium">
+    <div class="max-w-7xl mx-auto px-4 space-y-2">
+      <p class="font-extrabold text-white text-xs tracking-wider uppercase">QA POS — Digital Aspikmas Kembaran</p>
+      <p class="text-[10px] text-slate-600">Sistem Pencatat Transaksi Kasir Mini Thermal & CRM Customer Berkelanjutan.</p>
+      <p class="text-[9px] text-slate-700">&copy; 2026 QA POS. Seluruh hak cipta dilindungi undang-undang.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Dark/Light Theme Toggle
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const sunIcon = document.getElementById('sun-icon');
+    const moonIcon = document.getElementById('moon-icon');
+
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      sunIcon.classList.remove('hidden');
+      moonIcon.classList.add('hidden');
+    } else {
+      document.documentElement.classList.remove('dark');
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    });
+
+    // Interactive Tab Switching Logic
+    function switchTab(tabId) {
+      // Hide all panels
+      const panels = document.querySelectorAll('.tab-panel');
+      panels.forEach(p => p.classList.add('hidden'));
+
+      // Remove active states from buttons
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(b => {
+        b.classList.remove('border-indigo-600', 'bg-indigo-50', 'text-indigo-900', 'dark:bg-indigo-950/30', 'dark:text-indigo-400');
+        b.classList.add('text-slate-500', 'border-transparent');
+      });
+
+      // Show selected panel
+      document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+
+      // Add active state to clicked button
+      const activeBtn = document.getElementById(`btn-${tabId}`);
+      activeBtn.classList.remove('text-slate-500', 'border-transparent');
+      activeBtn.classList.add('border-indigo-600', 'bg-indigo-50', 'text-indigo-900', 'dark:bg-indigo-950/30', 'dark:text-indigo-400');
+    }
+  </script>
+</body>
+</html>
