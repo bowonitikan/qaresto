@@ -185,9 +185,17 @@
               <i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0 text-teal-600"></i>
               <span>7. Laporan Keuangan POS</span>
             </a>
+            <a href="#ekspor-csv" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 shrink-0 text-emerald-600"></i>
+              <span>8. Ekspor Format CSV</span>
+            </a>
+            <a href="#pemeliharaan-db" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
+              <i data-lucide="database" class="w-4 h-4 shrink-0 text-purple-600"></i>
+              <span>9. Pemeliharaan Database</span>
+            </a>
             <a href="#faq" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 transition-all border-l-2 border-transparent">
-              <i data-lucide="help-circle" class="w-4 h-4 shrink-0 text-purple-600"></i>
-              <span>8. Tanya Jawab (FAQ)</span>
+              <i data-lucide="help-circle" class="w-4 h-4 shrink-0 text-amber-600"></i>
+              <span>10. Tanya Jawab (FAQ)</span>
             </a>
           </nav>
         </div>
@@ -561,14 +569,92 @@
           </div>
         </article>
 
-        <!-- SECTION 8: FAQ -->
-        <article id="faq" class="doc-section scroll-mt-24 space-y-4">
+        <!-- SECTION 8: Ekspor CSV -->
+        <article id="ekspor-csv" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 p-2.5 rounded-xl">
+              <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">8. Ekspor Data Laporan Penjualan ke Format CSV</h3>
+              <p class="text-xs text-slate-400">Cara mengunduh laporan penjualan dalam format spreadsheet yang kompatibel dengan Excel atau Google Sheets</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Selain ekspor PDF yang berformat rapi dan siap cetak, QA POS kini mendukung ekspor data mentah ke format **CSV (Comma Separated Values)**. Fitur ini dirancang khusus bagi pemilik usaha yang ingin menganalisis data keuangan secara mendalam menggunakan Microsoft Excel, Google Sheets, atau perangkat lunak analisis data lainnya.
+            </p>
+
+            <div class="space-y-2">
+              <h4 class="font-black text-slate-900 dark:text-white">Cara Mengekspor CSV:</h4>
+              <ul class="list-disc list-inside space-y-1.5 ml-1">
+                <li><strong class="text-slate-850 dark:text-white">Melalui Dashboard Admin:</strong> Buka tab "Laporan Keuangan", klik tombol <strong class="text-emerald-650">"Ekspor CSV"</strong> di pojok kanan atas untuk mengunduh rekap bulanan yang aktif.</li>
+                <li><strong class="text-slate-850 dark:text-white">Melalui Dashboard Kasir:</strong> Buka tab "Laporan Penjualan Shift", klik tombol <strong class="text-emerald-650">"Ekspor CSV Shift"</strong> di bagian atas untuk mengunduh rekap transaksi shift kasir pada hari itu.</li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 9: Pemeliharaan Database -->
+        <article id="pemeliharaan-db" class="doc-section scroll-mt-24 space-y-4">
           <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
             <span class="bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 p-2.5 rounded-xl">
+              <i data-lucide="database" class="w-5 h-5"></i>
+            </span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">9. Pemeliharaan, Backup, & Pemulihan Database</h3>
+              <p class="text-xs text-slate-400">Panduan mencadangkan database ke file JSON lokal, memulihkan data, dan melakukan reset total sistem</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            <p>
+              Seluruh data transaksi, pelanggan CRM, katalog produk, dan pengaturan struk tersimpan dengan aman pada database **Cloud SQL (PostgreSQL)**. Untuk keamanan tambahan dan kelancaran pemeliharaan, sistem menyediakan modul khusus di halaman **Setup Toko** yang dapat diakses oleh Administrator:
+            </p>
+
+            <div class="space-y-3">
+              <div>
+                <h4 class="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-600"></i>
+                  <span>1. Pencadangan Data (Backup Database):</span>
+                </h4>
+                <p class="pl-5 text-slate-500">
+                  Klik tombol <strong class="text-indigo-650">"Cadangkan (Backup JSON)"</strong> untuk mengekspor seluruh tabel database Anda menjadi satu file `.json`. Simpan berkas ini di komputer Anda sebagai salinan cadangan berkala sebelum melakukan perubahan besar.
+                </p>
+              </div>
+
+              <div>
+                <h4 class="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i data-lucide="upload" class="w-3.5 h-3.5 text-emerald-600"></i>
+                  <span>2. Pemulihan Data (Restore Database):</span>
+                </h4>
+                <p class="pl-5 text-slate-500">
+                  Untuk memperbarui atau memulihkan data dari salinan cadangan, klik tombol <strong class="text-emerald-650">"Unggah & Perbarui (Restore JSON)"</strong>, lalu pilih file backup `.json` yang telah Anda unduh sebelumnya. Sistem akan memuat ulang seluruh tabel secara instan tanpa menghentikan layanan.
+                </p>
+              </div>
+
+              <div>
+                <h4 class="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5 text-rose-600"></i>
+                  <span>3. Reset Setelan Pabrik (Reset Database):</span>
+                </h4>
+                <p class="pl-5 text-slate-500">
+                  Jika ingin mengosongkan semua data transaksi dan mengembalikan sistem ke kondisi awal (setelan pabrik dengan data contoh), klik <strong class="text-rose-650">"Reset Database Aplikasi"</strong>. Tindakan berisiko tinggi ini memerlukan konfirmasi autentikasi dengan memasukkan **PIN Administrator (PIN Default: 54321)** demi menjaga integritas data Anda.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- SECTION 10: FAQ -->
+        <article id="faq" class="doc-section scroll-mt-24 space-y-4">
+          <div class="flex items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <span class="bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 p-2.5 rounded-xl">
               <i data-lucide="help-circle" class="w-5 h-5"></i>
             </span>
             <div>
-              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">8. Pertanyaan yang Sering Diajukan (FAQ)</h3>
+              <h3 class="text-xl sm:text-2xl font-black tracking-tight text-slate-950 dark:text-white">10. Pertanyaan yang Sering Diajukan (FAQ)</h3>
               <p class="text-xs text-slate-400">Kumpulan solusi praktis atas permasalahan operasional kasir sehari-hari</p>
             </div>
           </div>

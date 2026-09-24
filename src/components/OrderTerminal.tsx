@@ -54,6 +54,7 @@ export default function OrderTerminal({
   const [promoCodeInput, setPromoCodeInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<Promo | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit' | 'QRIS' | 'Kredit'>('Cash');
+  const [cashReceivedInput, setCashReceivedInput] = useState<string>('');
   const [itemNotes, setItemNotes] = useState<{ [productId: string]: string }>({});
 
   // Void Item & Order state (with passcode authorization for cashiers)
@@ -244,6 +245,9 @@ export default function OrderTerminal({
     setIsProcessingCheckout(true);
 
     try {
+      const cashReceivedVal = paymentMethod === 'Cash' ? (Number(cashReceivedInput) || grandTotal) : undefined;
+      const changeAmountVal = cashReceivedVal !== undefined ? Math.max(0, cashReceivedVal - grandTotal) : undefined;
+
       // Package order
       const orderPayload = {
         items: cart.map(item => ({
@@ -256,7 +260,9 @@ export default function OrderTerminal({
         grandTotal,
         paymentMethod,
         cashier: currentUser.name,
-        status: 'success' as const
+        status: 'success' as const,
+        cashReceived: cashReceivedVal,
+        changeAmount: changeAmountVal
       };
 
       const completedOrder = onProcessOrder(orderPayload, selectedCustomerId || undefined);
@@ -272,6 +278,7 @@ export default function OrderTerminal({
         setAppliedPromo(null);
         setPromoCodeInput('');
         setItemNotes({});
+        setCashReceivedInput('');
       }, 1200);
 
     } catch (error) {
@@ -284,7 +291,7 @@ export default function OrderTerminal({
     <div id="pos-terminal-layout" className="grid grid-cols-12 gap-4 min-h-[75vh]">
       
       {/* LEFT: Product Grid Area (Cols 1-3 renamed to side-by-side grid) */}
-      <div className="col-span-7 md:col-span-8 space-y-4">
+      <div className="col-span-12 landscape:col-span-7 md:col-span-8 space-y-4">
         {/* Search menu */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
@@ -400,7 +407,7 @@ export default function OrderTerminal({
       </div>
 
       {/* RIGHT: Billing & Checkout Area (Col span 5 on mobile/tablet, 4 on desktop) */}
-      <div className="col-span-5 md:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-xs p-4 flex flex-col justify-between h-full">
+      <div className="col-span-12 landscape:col-span-5 md:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-xs p-4 flex flex-col justify-between h-full">
         
         <div>
           {/* Section title */}
@@ -574,9 +581,20 @@ export default function OrderTerminal({
           )}
 
           {appliedPromo && (
-            <div className="mt-1.5 bg-indigo-50 border border-indigo-100 p-1.5 rounded-lg flex justify-between items-center text-[10px] text-indigo-800 animate-fade-in shadow-xs">
-              <span className="font-semibold">{appliedPromo.title} AKTIF</span>
-              <span className="font-bold">Potongan -{appliedPromo.discountPercent}%</span>
+            <div className="mt-1.5 bg-indigo-50 border border-indigo-150 p-2.5 rounded-xl text-[10px] text-indigo-900 animate-fade-in shadow-xs space-y-1.5">
+              <div className="flex justify-between items-center border-b border-indigo-100/50 pb-1 mb-1">
+                <span className="font-bold uppercase tracking-wider text-[9px] text-indigo-700">PROMO AKTIF</span>
+                <span className="font-mono font-black text-xs bg-indigo-600 text-white px-2 py-0.5 rounded-md">
+                  -{appliedPromo.discountPercent}%
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-extrabold text-slate-900">{appliedPromo.title}</p>
+                <p className="text-slate-500 font-medium text-[9px] leading-relaxed">{appliedPromo.description}</p>
+                <p className="text-[9px] font-mono font-bold text-indigo-700 mt-1.5 bg-indigo-100/65 px-2 py-1 rounded-lg inline-block">
+                  Kode Promo: <span className="font-extrabold uppercase">{appliedPromo.code}</span>
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -632,6 +650,75 @@ export default function OrderTerminal({
               ))}
             </div>
           </div>
+
+          {paymentMethod === 'Cash' && (
+            <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl space-y-2.5 mt-2 animate-fade-in text-xs">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-slate-700">Nominal Uang Diterima:</span>
+                <span className="text-[10px] text-slate-400 font-medium">Ketik atau Pilih tombol cepat</span>
+              </div>
+              
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-bold font-mono">Rp</span>
+                <input
+                  type="text"
+                  placeholder={grandTotal.toString()}
+                  value={cashReceivedInput}
+                  onChange={(e) => setCashReceivedInput(e.target.value.replace(/\D/g, ''))}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg font-mono font-bold text-right text-indigo-750 focus:outline-hidden focus:border-indigo-600 transition-all text-xs"
+                />
+              </div>
+
+              {/* Quick Suggestion Buttons: 20k, 50k, 100k, 300k, Pas */}
+              <div className="grid grid-cols-5 gap-1 text-[10px]">
+                {([20000, 50000, 100000, 300000] as const).map((amount) => {
+                  const isDisabled = amount < grandTotal;
+                  return (
+                    <button
+                      key={amount}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => setCashReceivedInput(amount.toString())}
+                      className={`py-1 rounded-md border font-semibold transition-all text-center cursor-pointer ${
+                        isDisabled
+                          ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed'
+                          : cashReceivedInput === amount.toString()
+                            ? 'bg-indigo-600 text-white border-indigo-600 font-bold'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {amount / 1000}k
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setCashReceivedInput(grandTotal.toString())}
+                  className={`py-1 rounded-md border font-bold transition-all text-center cursor-pointer ${
+                    cashReceivedInput === grandTotal.toString()
+                      ? 'bg-indigo-600 text-white border-indigo-600'
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  Pas
+                </button>
+              </div>
+
+              {/* Change calculator display (Kembalian) */}
+              {(() => {
+                const cashAmt = Number(cashReceivedInput) || 0;
+                const changeAmt = cashAmt - grandTotal;
+                return (
+                  <div className="flex justify-between items-center border-t border-dashed border-slate-200 pt-2 text-xs">
+                    <span className="font-bold text-slate-600">Uang Kembalian:</span>
+                    <span className={`font-mono font-extrabold text-sm ${changeAmt >= 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      {changeAmt >= 0 ? formatIDR(changeAmt) : 'Rp 0'}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
 
           {/* Core Checkout Buttons */}
           <div className="grid grid-cols-5 gap-2 pt-3">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Order, Customer } from '../types';
 import { formatIDR } from '../utils';
-import { Printer, Bluetooth, Check, Wifi, AlertCircle, RefreshCw } from 'lucide-react';
+import { Printer, Bluetooth, Check, Wifi, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface ReceiptConfig {
@@ -32,9 +32,10 @@ export default function ThermalReceipt({
 }: ThermalReceiptProps) {
   const [isBluetoothEnabled, setIsBluetoothEnabled] = useState(false);
   const [printers, setPrinters] = useState([
-    { id: 'p_1', name: 'Rongta RP80 Thermal POS', connected: false, type: 'Bluetooth' },
+    { id: 'p_1', name: 'Rongta RP80 Thermal POS (80mm)', connected: false, type: 'Bluetooth' },
     { id: 'p_2', name: 'Epson TM-T82 (USB/LAN)', connected: false, type: 'LAN' },
-    { id: 'p_3', name: 'Sunmi V2 Portable Printer', connected: false, type: 'Bluetooth' },
+    { id: 'p_3', name: 'Sunmi V2 Portable Printer (58mm)', connected: false, type: 'Bluetooth' },
+    { id: 'p_4', name: 'Zjiang ZJ-5802 Bluetooth Printer (58mm)', connected: false, type: 'Bluetooth' },
   ]);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -198,27 +199,37 @@ export default function ThermalReceipt({
             )}
           </div>
 
-          <div className="flex gap-3 mt-6">
+          <div className="grid grid-cols-3 gap-2 mt-6">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer text-sm"
+              className="py-2.5 border border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors cursor-pointer text-xs"
             >
               Tutup Setup
             </button>
             <button
+              onClick={() => {
+                window.print();
+              }}
+              className="py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer text-xs"
+              title="Simpan atau Cetak struk ini ke file PDF berkualitas tinggi"
+            >
+              <FileText size={14} />
+              <span>Cetak PDF</span>
+            </button>
+            <button
               onClick={handlePrint}
               disabled={isPrinting}
-              className="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer text-sm"
+              className="py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-emerald-400 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer text-xs"
             >
               {isPrinting ? (
                 <>
-                  <RefreshCw size={16} className="animate-spin" />
-                  <span>Mencetak Struk...</span>
+                  <RefreshCw size={13} className="animate-spin" />
+                  <span>Memproses...</span>
                 </>
               ) : (
                 <>
-                  <Printer size={16} />
-                  <span>Cetak Struk POS</span>
+                  <Printer size={13} />
+                  <span>Cetak Struk</span>
                 </>
               )}
             </button>
@@ -226,7 +237,18 @@ export default function ThermalReceipt({
         </div>
 
         {/* Right Side: Virtual Thermal Receipt Paper Preview */}
-        <div id="receipt-print-area" className="flex-1 bg-gray-100 p-6 flex items-center justify-center overflow-y-auto max-h-[95vh] md:max-h-none print:p-0 print:bg-white">
+        <div id="receipt-print-area" className="flex-1 bg-gray-100 p-6 flex flex-col items-center justify-start overflow-y-auto max-h-[95vh] md:max-h-none print:p-0 print:bg-white">
+          {/* Live Preview Header bar for instant visibility */}
+          <div className="w-full max-w-[340px] flex justify-between items-center mb-4 pb-2.5 border-b border-gray-200/60 print:hidden text-slate-800 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-slate-700">Pratinjau Struk Kasir</span>
+            </div>
+            <span className="text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-100 font-bold px-2 py-0.5 rounded-full font-sans uppercase">
+              Lebar: {receiptConfig.paperWidth}
+            </span>
+          </div>
+
           <div className={`relative w-full transition-all duration-300 ${receiptConfig.paperWidth === '58mm' ? 'max-w-[240px]' : 'max-w-[340px]'}`}>
             {/* Top jagged paper edge design */}
             <div className="absolute top-0 left-0 right-0 h-2 bg-radial-gradient flex overflow-hidden select-none pointer-events-none z-10 print:hidden">
@@ -349,6 +371,19 @@ export default function ThermalReceipt({
                   <span>GRAND TOTAL:</span>
                   <span>{formatIDR(order.grandTotal)}</span>
                 </div>
+                {order.cashReceived !== undefined && order.cashReceived > 0 && (
+                  <>
+                    <div className="border-b border-dotted border-gray-200 my-1" />
+                    <div className="flex justify-between text-[11px] text-gray-600">
+                      <span>Uang Diterima:</span>
+                      <span>{formatIDR(order.cashReceived)}</span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-emerald-700 font-bold">
+                      <span>Kembalian:</span>
+                      <span>{formatIDR(order.changeAmount ?? 0)}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="border-b border-dashed border-gray-300 my-3" />

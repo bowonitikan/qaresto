@@ -1,6 +1,7 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useRef } from 'react';
 import { Store, Printer, Save, CheckCircle2, RotateCcw, AlertCircle, FileText, Image, Phone, FileSpreadsheet, RefreshCw, FileUp, Check } from 'lucide-react';
 import { formatIDR, getGoogleSheetsExportUrl } from '../utils';
+import DatabaseManager from './DatabaseManager';
 
 interface ReceiptConfig {
   address: string;
@@ -17,6 +18,7 @@ interface ShopSetupProps {
   receiptConfig: ReceiptConfig;
   onSave: (name: string, motto: string, config: ReceiptConfig) => void;
   currentUserRole: 'admin' | 'cashier';
+  onDatabaseStateChange?: () => void;
 }
 
 export default function ShopSetup({
@@ -25,6 +27,7 @@ export default function ShopSetup({
   receiptConfig: initialConfig,
   onSave,
   currentUserRole,
+  onDatabaseStateChange,
 }: ShopSetupProps) {
   const isAdmin = currentUserRole === 'admin';
 
@@ -601,6 +604,14 @@ export default function ShopSetup({
                 <span>Sukses memuat konfigurasi toko baru ke dalam sistem POS!</span>
               </div>
             )}
+          </div>
+
+          {/* Database Maintenance and Backup/Restore Panel via DatabaseManager */}
+          <div className="mt-4">
+            <DatabaseManager
+              currentUserRole={currentUserRole}
+              onDatabaseStateChange={onDatabaseStateChange}
+            />
           </div>
         </div>
 

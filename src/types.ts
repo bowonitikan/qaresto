@@ -44,6 +44,8 @@ export interface Order {
   status: 'success' | 'pending';
   cashier: string;
   isOffline?: boolean;
+  cashReceived?: number;
+  changeAmount?: number;
 }
 
 export interface User {

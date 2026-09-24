@@ -92,106 +92,107 @@ export default function App() {
   // Navigation tabs: 'kasir' | 'stok' | 'pelanggan' | 'laporan' | 'pengguna' | 'setup' | 'promo'
   const [activeTab, setActiveTab] = useState<'kasir' | 'stok' | 'pelanggan' | 'laporan' | 'pengguna' | 'setup' | 'promo'>('kasir');
 
-  // Core App states with LocalStorage persistence
-  const [products, setProducts] = useState<Product[]>(() => {
-    const saved = localStorage.getItem('qapos_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
-  });
-  const [customers, setCustomers] = useState<Customer[]>(() => {
-    const saved = localStorage.getItem('qapos_customers');
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
-  });
-  const [promos, setPromos] = useState<Promo[]>(() => {
-    const saved = localStorage.getItem('qapos_promos');
-    return saved ? JSON.parse(saved) : INITIAL_PROMOS;
-  });
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('qapos_orders');
-    return saved ? JSON.parse(saved) : PRE_POPULATED_ORDERS;
-  });
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('qapos_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
-  });
-  const [currentUser, setCurrentUser] = useState<User>(() => {
-    const savedUsers = localStorage.getItem('qapos_users');
-    const loadedUsers: User[] = savedUsers ? JSON.parse(savedUsers) : INITIAL_USERS;
-    const savedCur = localStorage.getItem('qapos_currentUser');
-    if (savedCur) {
-      try {
-        const parsed = JSON.parse(savedCur);
-        const matched = loadedUsers.find(u => u.id === parsed.id);
-        if (matched) return matched;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return loadedUsers[1] || INITIAL_USERS[1];
-  });
+  // Core App states with database load and local fallback
+  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
+  const [promos, setPromos] = useState<Promo[]>(INITIAL_PROMOS);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [users, setUsers] = useState<User[]>(INITIAL_USERS);
+  const [currentUser, setCurrentUser] = useState<User>(INITIAL_USERS[1]);
   const [isLocked, setIsLocked] = useState<boolean>(true); // Terminal locked on start
-  const [selectedLockUser, setSelectedLockUser] = useState<User>(() => {
-    const savedUsers = localStorage.getItem('qapos_users');
-    const loadedUsers: User[] = savedUsers ? JSON.parse(savedUsers) : INITIAL_USERS;
-    return loadedUsers[1] || INITIAL_USERS[1];
-  });
+  const [selectedLockUser, setSelectedLockUser] = useState<User>(INITIAL_USERS[1]);
   const [lockPin, setLockPin] = useState<string>('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
 
-  // Restaurant settings states with LocalStorage persistence
-  const [restaurantName, setRestaurantName] = useState<string>(() => {
-    return localStorage.getItem('qapos_restaurantName') || 'Resto Makmur Lezat';
+  // Restaurant settings states with LocalStorage and backend sync
+  const [restaurantName, setRestaurantName] = useState<string>('Resto Makmur Lezat');
+  const [restaurantMotto, setRestaurantMotto] = useState<string>('Sajian Lezat, Pelayanan Hangat');
+  const [receiptConfig, setReceiptConfig] = useState({
+    address: 'Jl. Kuliner No. 123, Bandung',
+    phone: '(022) 8765-4321',
+    headerMessage: 'SELAMAT MENIKMATI hidangan istimewa kami!',
+    footerMessage: 'Kritik & Saran Hubungi: admin@restomakmur.com',
+    showLogo: true,
+    paperWidth: '80mm' as '80mm' | '58mm'
   });
-  const [restaurantMotto, setRestaurantMotto] = useState<string>(() => {
-    return localStorage.getItem('qapos_restaurantMotto') || 'Sajian Lezat, Pelayanan Hangat';
-  });
-  const [receiptConfig, setReceiptConfig] = useState(() => {
-    const saved = localStorage.getItem('qapos_receiptConfig');
-    return saved ? JSON.parse(saved) : {
-      address: 'Jl. Kuliner No. 123, Bandung',
-      phone: '(022) 8765-4321',
-      headerMessage: 'SELAMAT MENIKMATI hidangan istimewa kami!',
-      footerMessage: 'Kritik & Saran Hubungi: admin@restomakmur.com',
-      showLogo: true,
-      paperWidth: '80mm' as '80mm' | '58mm'
+
+  // Fetch initial data from PostgreSQL database via full-stack endpoints
+  useEffect(() => {
+    const loadBackendData = async () => {
+      try {
+        const [productsRes, customersRes, promosRes, ordersRes, usersRes, settingsRes] = await Promise.all([
+          fetch('/api/products').then(res => res.json()),
+          fetch('/api/customers').then(res => res.json()),
+          fetch('/api/promos').then(res => res.json()),
+          fetch('/api/orders').then(res => res.json()),
+          fetch('/api/users').then(res => res.json()),
+          fetch('/api/settings').then(res => res.json()),
+        ]);
+
+        if (Array.isArray(productsRes) && productsRes.length > 0) setProducts(productsRes);
+        if (Array.isArray(customersRes) && customersRes.length > 0) setCustomers(customersRes);
+        if (Array.isArray(promosRes) && promosRes.length > 0) setPromos(promosRes);
+        if (Array.isArray(ordersRes)) setOrders(ordersRes);
+        if (Array.isArray(usersRes) && usersRes.length > 0) {
+          setUsers(usersRes);
+          setSelectedLockUser(usersRes[1] || usersRes[0]);
+          setCurrentUser(usersRes[1] || usersRes[0]);
+        }
+
+        if (settingsRes) {
+          if (settingsRes.restaurantName) setRestaurantName(settingsRes.restaurantName);
+          if (settingsRes.restaurantMotto) setRestaurantMotto(settingsRes.restaurantMotto);
+          if (settingsRes.receiptConfig) {
+            try {
+              setReceiptConfig(JSON.parse(settingsRes.receiptConfig));
+            } catch (e) {
+              console.error('Failed to parse receipt config:', e);
+            }
+          }
+        }
+
+        // Add a database connection notification
+        const dbNote: POSNotification = {
+          id: `n_db_load_${Date.now()}`,
+          type: 'success',
+          title: 'Database Cloud Terhubung',
+          message: 'Sistem POS terhubung langsung dengan Google Cloud SQL (PostgreSQL). Seluruh transaksi disinkronisasikan secara real-time.',
+          time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+          read: false
+        };
+        setNotifications(prev => [dbNote, ...prev]);
+      } catch (err) {
+        console.error('Failed to load live data from full-stack backend:', err);
+      }
     };
-  });
 
-  // Sync state modifications to localStorage via useEffect
-  useEffect(() => {
-    localStorage.setItem('qapos_products', JSON.stringify(products));
-  }, [products]);
+    loadBackendData();
+  }, []);
 
+  // Sync state modifications to backend via REST APIs
   useEffect(() => {
-    localStorage.setItem('qapos_customers', JSON.stringify(customers));
-  }, [customers]);
-
-  useEffect(() => {
-    localStorage.setItem('qapos_promos', JSON.stringify(promos));
-  }, [promos]);
-
-  useEffect(() => {
-    localStorage.setItem('qapos_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('qapos_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    localStorage.setItem('qapos_currentUser', JSON.stringify(currentUser));
-  }, [currentUser]);
-
-  useEffect(() => {
-    localStorage.setItem('qapos_restaurantName', restaurantName);
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'restaurantName', value: restaurantName })
+    }).catch(err => console.error(err));
   }, [restaurantName]);
 
   useEffect(() => {
-    localStorage.setItem('qapos_restaurantMotto', restaurantMotto);
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'restaurantMotto', value: restaurantMotto })
+    }).catch(err => console.error(err));
   }, [restaurantMotto]);
 
   useEffect(() => {
-    localStorage.setItem('qapos_receiptConfig', JSON.stringify(receiptConfig));
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'receiptConfig', value: JSON.stringify(receiptConfig) })
+    }).catch(err => console.error(err));
   }, [receiptConfig]);
 
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -409,6 +410,12 @@ export default function App() {
     };
     setProducts(prev => [item, ...prev]);
 
+    fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    }).catch(err => console.error('Failed to add product:', err));
+
     const addNote: POSNotification = {
       id: `n_prod_${Date.now()}`,
       type: 'success',
@@ -421,32 +428,47 @@ export default function App() {
   };
 
   const handleEditProduct = (id: string, updated: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const current = products.find(p => p.id === id);
+    if (!current) return;
+    const merged = { ...current, ...updated };
+    setProducts(prev => prev.map(p => p.id === id ? merged : p));
+
+    fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    }).catch(err => console.error('Failed to update product:', err));
   };
 
   const handleDeleteProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
+    fetch(`/api/products/${id}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('Failed to delete product:', err));
   };
 
   // Update Product Stock levels
   const handleUpdateProductStock = (productId: string, newStock: number) => {
-    setProducts(prev => prev.map(p => {
-      if (p.id !== productId) return p;
-      return { ...p, stock: newStock };
-    }));
-
     const prod = products.find(p => p.id === productId);
-    if (prod) {
-      const stockNote: POSNotification = {
-        id: `n_stock_adj_${Date.now()}`,
-        type: 'info',
-        title: 'Penyesuaian Stok',
-        message: `Stok menu "${prod.name}" disesuaikan menjadi ${newStock} porsi.`,
-        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        read: false
-      };
-      setNotifications(prev => [stockNote, ...prev]);
-    }
+    if (!prod) return;
+    const merged = { ...prod, stock: newStock };
+    setProducts(prev => prev.map(p => p.id === productId ? merged : p));
+
+    fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    }).catch(err => console.error('Failed to update stock:', err));
+
+    const stockNote: POSNotification = {
+      id: `n_stock_adj_${Date.now()}`,
+      type: 'info',
+      title: 'Penyesuaian Stok',
+      message: `Stok menu "${prod.name}" disesuaikan menjadi ${newStock} porsi.`,
+      time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      read: false
+    };
+    setNotifications(prev => [stockNote, ...prev]);
   };
 
   // Apply promo code requested from scrolling ticker
@@ -463,6 +485,12 @@ export default function App() {
     };
     setPromos(prev => [item, ...prev]);
 
+    fetch('/api/promos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    }).catch(err => console.error('Failed to add promo:', err));
+
     const addNote: POSNotification = {
       id: `n_promo_add_${Date.now()}`,
       type: 'success',
@@ -475,11 +503,23 @@ export default function App() {
   };
 
   const handleEditPromo = (id: string, updated: Partial<Promo>) => {
-    setPromos(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const current = promos.find(p => p.id === id);
+    if (!current) return;
+    const merged = { ...current, ...updated };
+    setPromos(prev => prev.map(p => p.id === id ? merged : p));
+
+    fetch('/api/promos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(merged)
+    }).catch(err => console.error('Failed to update promo:', err));
   };
 
   const handleDeletePromo = (id: string) => {
     setPromos(prev => prev.filter(p => p.id !== id));
+    fetch(`/api/promos/${id}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('Failed to delete promo:', err));
   };
 
   // Update User PIN securely with role verification
@@ -504,12 +544,18 @@ export default function App() {
       return false;
     }
 
-    // Apply PIN update
+    const updatedUser = { ...targetUser, pin: newPin };
     setUsers(prev => prev.map(u => u.id === targetUserId ? { ...u, pin: newPin } : u));
 
     if (currentUser.id === targetUserId) {
       setCurrentUser(prev => ({ ...prev, pin: newPin }));
     }
+
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedUser)
+    }).catch(err => console.error('Failed to update user PIN on server:', err));
 
     // Add a beautiful POS notification
     const changeNote: POSNotification = {
@@ -536,11 +582,21 @@ export default function App() {
       joinDate: new Date().toISOString().split('T')[0]
     };
     setCustomers(prev => [item, ...prev]);
+
+    fetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    }).catch(err => console.error('Failed to save customer to DB:', err));
   };
 
   // Delete Customer from database
   const handleDeleteCustomer = (id: string) => {
     setCustomers(prev => prev.filter(c => c.id !== id));
+
+    fetch(`/api/customers/${id}`, {
+      method: 'DELETE'
+    }).catch(err => console.error('Failed to delete customer from DB:', err));
 
     const deleteNote: POSNotification = {
       id: `n_cust_del_${Date.now()}`,
@@ -556,6 +612,14 @@ export default function App() {
   // Import batch customers from Google Sheets
   const handleImportCustomers = (importedList: Customer[]) => {
     setCustomers(prev => [...importedList, ...prev]);
+
+    importedList.forEach(c => {
+      fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(c)
+      }).catch(err => console.error(err));
+    });
 
     const importNote: POSNotification = {
       id: `n_import_${Date.now()}`,
@@ -575,6 +639,14 @@ export default function App() {
       id: `p_new_${Math.random().toString(36).substring(2, 9)}`
     }));
     setProducts(prev => [...mapped, ...prev]);
+
+    mapped.forEach(p => {
+      fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p)
+      }).catch(err => console.error(err));
+    });
 
     const importNote: POSNotification = {
       id: `n_prod_import_${Date.now()}`,
@@ -636,7 +708,7 @@ export default function App() {
     // Handle Loyalty Point updates
     if (customerId) {
       setCustomers(prevCust =>
-        prevCust.map(c => {
+         prevCust.map(c => {
           if (c.id !== customerId) return c;
           // Every Rp 10.000 spent earns 1 loyalty point
           const pointsEarned = Math.floor(orderPayload.grandTotal / 10000);
@@ -653,6 +725,16 @@ export default function App() {
     // Save transaction
     if (isOnline) {
       setOrders(prev => [completedOrder, ...prev]);
+      
+      fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(completedOrder)
+      }).then(() => {
+        // Sync states from backend to stay in sync with stock adjustments and loyalty updates computed on server
+        fetch('/api/products').then(res => res.json()).then(data => { if (Array.isArray(data)) setProducts(data); });
+        fetch('/api/customers').then(res => res.json()).then(data => { if (Array.isArray(data)) setCustomers(data); });
+      }).catch(err => console.error('Failed to save order to PostgreSQL:', err));
     } else {
       // Queue offline orders
       setPendingSyncQueue(prev => [...prev, completedOrder]);
@@ -823,6 +905,47 @@ export default function App() {
     );
   }
 
+  const handleReloadBackendData = async () => {
+    try {
+      const [productsRes, customersRes, promosRes, ordersRes, usersRes, settingsRes] = await Promise.all([
+        fetch('/api/products').then(res => res.json()),
+        fetch('/api/customers').then(res => res.json()),
+        fetch('/api/promos').then(res => res.json()),
+        fetch('/api/orders').then(res => res.json()),
+        fetch('/api/users').then(res => res.json()),
+        fetch('/api/settings').then(res => res.json()),
+      ]);
+
+      if (Array.isArray(productsRes)) setProducts(productsRes);
+      if (Array.isArray(customersRes)) setCustomers(customersRes);
+      if (Array.isArray(promosRes)) setPromos(promosRes);
+      if (Array.isArray(ordersRes)) setOrders(ordersRes);
+      if (Array.isArray(usersRes) && usersRes.length > 0) {
+        setUsers(usersRes);
+        const stillExists = usersRes.find(u => u.id === currentUser.id);
+        if (stillExists) {
+          setCurrentUser(stillExists);
+        } else {
+          setCurrentUser(usersRes[1] || usersRes[0]);
+        }
+      }
+
+      if (settingsRes) {
+        if (settingsRes.restaurantName) setRestaurantName(settingsRes.restaurantName);
+        if (settingsRes.restaurantMotto) setRestaurantMotto(settingsRes.restaurantMotto);
+        if (settingsRes.receiptConfig) {
+          try {
+            setReceiptConfig(JSON.parse(settingsRes.receiptConfig));
+          } catch (e) {
+            console.error('Failed to parse receipt config:', e);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to reload database state:', err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans relative antialiased text-slate-800">
       
@@ -836,33 +959,31 @@ export default function App() {
 
       {/* Primary header navbar */}
       <header className="bg-indigo-900 text-white shadow-sm py-3 px-4 sticky top-0 z-30 shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col landscape:flex-row md:flex-row items-center justify-between gap-3 landscape:gap-4 md:gap-4">
           
-          <div className="flex items-center gap-3">
+          {/* TOP ROW on mobile portrait: Restaurant brand name & motto */}
+          <div className="text-center landscape:text-left md:text-left">
+            <h1 className="font-extrabold text-sm md:text-base leading-none tracking-tight shimmer-text">{restaurantName}</h1>
+            <p className="text-[10px] text-indigo-200 font-mono tracking-wider uppercase mt-1 landscape:mt-0 md:mt-0">{restaurantMotto || 'Cloud POS Kasir'}</p>
+          </div>
+
+          {/* BOTTOM ROW on mobile portrait / Right side on landscape & desktop: Controls */}
+          <div className="flex items-center justify-between landscape:justify-end md:justify-end w-full landscape:w-auto md:w-auto gap-2.5 landscape:gap-3 md:gap-3 border-t border-indigo-800/30 pt-2.5 landscape:border-0 landscape:pt-0 md:border-0 md:pt-0">
             {/* Unified Hamburger toggle for the sidebar drawer */}
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 bg-indigo-850 hover:bg-indigo-800 rounded-xl transition-all cursor-pointer border border-indigo-700/50"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-850 hover:bg-indigo-800 rounded-xl transition-all cursor-pointer border border-indigo-700/50"
               aria-label="Buka menu"
             >
-              <Menu size={16} />
-              <span className="text-xs font-bold hidden sm:inline">Menu</span>
+              <Menu size={15} />
+              <span className="text-[10px] font-bold">Menu</span>
             </button>
 
-            {/* Restaurant brand logo */}
-            <div className="flex items-center gap-2">
-              <div className="bg-white text-indigo-950 p-1.5 rounded-xl font-black text-xs shadow-xs tracking-tight">
-                QA
-              </div>
-              <div>
-                <h1 className="font-extrabold text-sm md:text-base leading-none tracking-tight shimmer-text">{restaurantName}</h1>
-                <span className="text-[10px] text-indigo-200 font-mono tracking-wider uppercase">{restaurantMotto || 'Cloud POS Kasir'}</span>
-              </div>
+            {/* Restaurant brand logo text: QA */}
+            <div className="bg-white text-indigo-950 px-2 py-1.5 rounded-xl font-black text-[10px] shadow-xs tracking-tight">
+              QA
             </div>
-          </div>
 
-          {/* Sync status controller and Profile controls */}
-          <div className="flex items-center gap-3">
             {/* Online/Offline Simulator */}
             <OfflineSyncIndicator
               isOnline={isOnline}
@@ -875,12 +996,12 @@ export default function App() {
             {/* Interactive Notifications Bell Badge */}
             <button
               onClick={() => setIsNotificationOpen(true)}
-              className="p-2 bg-indigo-800 hover:bg-indigo-700 rounded-xl relative transition-all cursor-pointer"
+              className="p-1.5 bg-indigo-800 hover:bg-indigo-700 rounded-xl relative transition-all cursor-pointer"
               aria-label="Buka notifikasi"
             >
-              <Bell size={18} />
+              <Bell size={16} />
               {unreadNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-indigo-900 animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-indigo-900 animate-pulse">
                   {unreadNotificationCount}
                 </span>
               )}
@@ -892,11 +1013,11 @@ export default function App() {
                 src={currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&facepad=2&w=100&h=100&q=80'}
                 alt={currentUser.name}
                 referrerPolicy="no-referrer"
-                className="w-8 h-8 rounded-full border-2 border-indigo-800/50 object-cover"
+                className="w-7 h-7 rounded-full border border-indigo-800/50 object-cover"
               />
-              <div className="text-left text-xs">
+              <div className="text-left text-[10px]">
                 <p className="font-bold leading-tight">{currentUser.name}</p>
-                <p className="text-[10px] text-indigo-200 capitalize font-medium">{currentUser.role}</p>
+                <p className="text-[8px] text-indigo-200 capitalize font-medium">{currentUser.role}</p>
               </div>
             </div>
 
@@ -906,11 +1027,11 @@ export default function App() {
                 setSelectedLockUser(currentUser);
                 setIsLocked(true);
               }}
-              className="p-2 bg-indigo-800 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-white border border-indigo-700/50"
+              className="p-1.5 bg-indigo-800 hover:bg-rose-600 hover:text-white rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 text-white border border-indigo-700/50"
               title="Kunci Layar POS / Ganti Shift"
             >
-              <Lock size={15} />
-              <span className="text-[10px] font-bold hidden md:inline">Kunci</span>
+              <Lock size={13} />
+              <span className="text-[9px] font-bold">Kunci</span>
             </button>
           </div>
 
@@ -1218,6 +1339,7 @@ export default function App() {
                     setRestaurantMotto(motto);
                     setReceiptConfig(config);
                   }}
+                  onDatabaseStateChange={handleReloadBackendData}
                 />
               )}
 

@@ -643,6 +643,23 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
     doc.save(`Laporan_Shift_${periode === 'harian' ? 'Harian' : 'Mingguan'}_${currentUser?.name?.split(' ')[0]}.pdf`);
   };
 
+  const handleExportCSVCashier = () => {
+    const headers = ['ID Pesanan', 'Nomor Invoice', 'Tanggal', 'Subtotal', 'Diskon', 'Pajak (10%)', 'Total Akhir', 'Metode Bayar', 'Kasir'];
+    const rows = cashierFilteredOrders.map(o => [
+      o.id,
+      o.invoiceNumber,
+      o.date,
+      o.subtotal,
+      o.discount,
+      o.tax,
+      o.grandTotal,
+      o.paymentMethod,
+      o.cashier
+    ]);
+
+    exportToCSV(`Laporan_Shift_${periode === 'harian' ? 'Harian' : 'Mingguan'}_${currentUser?.name?.split(' ')[0]}_${todayStr}`, headers, rows);
+  };
+
 
   // --- RENDERING VIEWS ---
 
@@ -699,7 +716,7 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <FileSpreadsheet size={14} />
-              <span>Ekspor Excel</span>
+              <span>Ekspor CSV</span>
             </button>
 
             <button
@@ -997,10 +1014,18 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
         <div className="flex flex-wrap items-center gap-2 shrink-0 relative z-10">
           <button
             onClick={handleExportPDFCashier}
-            className="bg-emerald-650 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-emerald-550 cursor-pointer shadow-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-indigo-500 cursor-pointer shadow-sm"
           >
             <FileText size={14} />
             <span>Ekspor PDF Shift</span>
+          </button>
+
+          <button
+            onClick={handleExportCSVCashier}
+            className="bg-emerald-650 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-emerald-550 cursor-pointer shadow-sm"
+          >
+            <FileSpreadsheet size={14} />
+            <span>Ekspor CSV Shift</span>
           </button>
 
           {/* Quick window print of shift */}
