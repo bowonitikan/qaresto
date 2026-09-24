@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Product, Category, CartItem, Customer, Promo, Order } from '../types';
+import { Product, Category, CartItem, Customer, Promo, Order, User } from '../types';
 import { formatIDR } from '../utils';
-import { Search, Plus, Minus, Trash2, ShoppingCart, User, Ticket, Check, RefreshCw, Sparkles, Smile, MessageSquare, CreditCard, Ban } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, ShoppingCart, User as UserIcon, Ticket, Check, RefreshCw, Sparkles, Smile, MessageSquare, CreditCard, Ban, ShieldAlert, KeyRound } from 'lucide-react';
 import ThermalReceipt from './ThermalReceipt';
 
 interface ReceiptConfig {
@@ -19,6 +19,7 @@ interface OrderTerminalProps {
   promos: Promo[];
   isOnline: boolean;
   currentUser: { name: string; role: string };
+  users: User[];
   onProcessOrder: (order: Omit<Order, 'id' | 'invoiceNumber' | 'date'>, customerId?: string) => Order;
   onApplyPromoCode: (code: string) => Promo | null;
   activePromoCodeFromTicker: string | null;
@@ -34,6 +35,7 @@ export default function OrderTerminal({
   promos,
   isOnline,
   currentUser,
+  users,
   onProcessOrder,
   onApplyPromoCode,
   activePromoCodeFromTicker,
@@ -53,6 +55,43 @@ export default function OrderTerminal({
   const [appliedPromo, setAppliedPromo] = useState<Promo | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'Cash' | 'Debit' | 'QRIS' | 'Kredit'>('Cash');
   const [itemNotes, setItemNotes] = useState<{ [productId: string]: string }>({});
+
+  // Void Item & Order state (with passcode authorization for cashiers)
+  const [pendingVoidAction, setPendingVoidAction] = useState<{
+    label: string;
+    execute: () => void;
+  } | null>(null);
+  const [voidPin, setVoidPin] = useState('');
+  const [voidPinError, setVoidPinError] = useState<string | null>(null);
+
+  // Track total items voided during this cashier terminal session
+  const [voidedItemsCount, setVoidedItemsCount] = useState<number>(0);
+
+  const requestVoidAction = (label: string, action: () => void) => {
+    setPendingVoidAction({
+      label,
+      execute: action
+    });
+    setVoidPin('');
+    setVoidPinError(null);
+  };
+
+  const handleVerifyVoidPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setVoidPinError(null);
+    
+    // Check if entered pin belongs to an admin user
+    const adminUser = users.find(u => u.role === 'admin' && u.pin === voidPin);
+    if (adminUser) {
+      if (pendingVoidAction) {
+        pendingVoidAction.execute();
+      }
+      setPendingVoidAction(null);
+      setVoidPin('');
+    } else {
+      setVoidPinError('PIN Admin tidak valid. Otorisasi void ditolak!');
+    }
+  };
 
   // Mobile viewport view switch: 'menu' or 'cart'
   const [mobileTab, setMobileTab] = useState<'menu' | 'cart'>('menu');
@@ -192,13 +231,11 @@ export default function OrderTerminal({
 
   // Cancel overall cart
   const handleCancelOrder = () => {
-    if (confirm('Apakah Anda yakin ingin membatalkan pesanan saat ini?')) {
-      setCart([]);
-      setSelectedCustomerId('');
-      setAppliedPromo(null);
-      setPromoCodeInput('');
-      setPromoError(null);
-    }
+    setCart([]);
+    setSelectedCustomerId('');
+    setAppliedPromo(null);
+    setPromoCodeInput('');
+    setPromoError(null);
   };
 
   // Place/Process the Billing
@@ -372,16 +409,24 @@ export default function OrderTerminal({
               <ShoppingCart className="text-indigo-600" size={18} />
               Struk Checkout
             </h3>
-            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono">
-              Item: {cart.reduce((sum, i) => sum + i.quantity, 0)}
-            </span>
+            <div className="flex gap-1.5 items-center">
+              {voidedItemsCount > 0 && (
+                <span className="text-[10px] bg-rose-50 text-rose-650 border border-rose-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-1 animate-pulse" title="Total item yang di-void dalam sesi kasir ini untuk transparansi audit">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-550 animate-ping"></span>
+                  Void: {voidedItemsCount}
+                </span>
+              )}
+              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-mono font-bold">
+                Item: {cart.reduce((sum, i) => sum + i.quantity, 0)}
+              </span>
+            </div>
           </div>
 
           {/* Customer Selection profiling */}
           <div className="mb-4 space-y-1.5">
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Loyalty</label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+              <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
               <select
                 value={selectedCustomerId}
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
@@ -445,22 +490,42 @@ export default function OrderTerminal({
                     {/* Adjust Panel */}
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleUpdateQuantity(item.product.id, -1)}
-                        className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                        onClick={() => {
+                          if (item.quantity === 1) {
+                            requestVoidAction(
+                              `kurangi & hapus "${item.product.name}" dari pesanan`,
+                              () => {
+                                handleUpdateQuantity(item.product.id, -1);
+                                setVoidedItemsCount(prev => prev + 1);
+                              }
+                            );
+                          } else {
+                            handleUpdateQuantity(item.product.id, -1);
+                          }
+                        }}
+                        className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer"
                       >
                         <Minus size={11} />
                       </button>
                       <span className="font-mono font-bold text-xs w-4 text-center">{item.quantity}</span>
                       <button
                         onClick={() => handleUpdateQuantity(item.product.id, 1)}
-                        className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                        className="p-1 rounded-md border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors cursor-pointer"
                       >
                         <Plus size={11} />
                       </button>
                       <button
-                        onClick={() => handleRemoveFromCart(item.product.id)}
-                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors ml-1"
-                        title="Hapus dari keranjang"
+                        onClick={() => {
+                          requestVoidAction(
+                            `hapus menu "${item.product.name}" dari pesanan`,
+                            () => {
+                              handleRemoveFromCart(item.product.id);
+                              setVoidedItemsCount(prev => prev + item.quantity);
+                            }
+                          );
+                        }}
+                        className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-md transition-colors ml-1 cursor-pointer"
+                        title="Hapus dari keranjang (Void)"
                       >
                         <Trash2 size={12} />
                       </button>
@@ -571,10 +636,16 @@ export default function OrderTerminal({
           {/* Core Checkout Buttons */}
           <div className="grid grid-cols-5 gap-2 pt-3">
             <button
-              onClick={handleCancelOrder}
+              onClick={() => {
+                const totalQty = cart.reduce((sum, item) => sum + item.quantity, 0);
+                requestVoidAction('membatalkan seluruh pesanan saat ini', () => {
+                  handleCancelOrder();
+                  setVoidedItemsCount(prev => prev + totalQty);
+                });
+              }}
               disabled={cart.length === 0}
               className="col-span-1 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center"
-              title="Batalkan Pesanan"
+              title="Batalkan Pesanan (Void)"
             >
               <Ban size={16} />
             </button>
@@ -611,6 +682,144 @@ export default function OrderTerminal({
           restaurantMotto={restaurantMotto}
           receiptConfig={receiptConfig}
         />
+      )}
+
+      {/* Void Item / Order Custom Confirmation & Authorization Modal */}
+      {pendingVoidAction && (
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-xs text-slate-900">
+          <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="space-y-4">
+              
+              {/* Icon & Title */}
+              <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-2">
+                <ShieldAlert size={24} className="animate-bounce" />
+              </div>
+              
+              <div className="text-center space-y-1.5">
+                <h3 className="font-extrabold text-slate-950 text-base">Otorisasi Void Item / Pesanan</h3>
+                <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                  Konfirmasi pembatalan pesanan yang belum terselesaikan.
+                </p>
+                <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center mt-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Tindakan Void:</span>
+                  <span className="font-bold text-xs text-slate-800 capitalize">"{pendingVoidAction.label}"</span>
+                </div>
+              </div>
+
+              {currentUser.role === 'admin' ? (
+                // ADMIN: Direct clearance confirmation
+                <div className="space-y-3 pt-2">
+                  <p className="text-center text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-1.5 rounded-lg border border-emerald-100">
+                    ✓ Anda masuk sebagai Admin. Otorisasi instan disetujui.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setPendingVoidAction(null)}
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={() => {
+                        pendingVoidAction.execute();
+                        setPendingVoidAction(null);
+                      }}
+                      className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs transition-colors cursor-pointer shadow-sm shadow-rose-100"
+                    >
+                      Ya, Lakukan Void
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // CASHIER: Needs PIN Authorization
+                <form onSubmit={handleVerifyVoidPin} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 justify-center">
+                      <KeyRound size={11} className="text-indigo-600" />
+                      Sandi PIN Otorisasi Admin
+                    </label>
+                    <input
+                      type="password"
+                      maxLength={8}
+                      placeholder="Masukkan PIN Admin (e.g. 54321)"
+                      value={voidPin}
+                      onChange={(e) => {
+                        setVoidPin(e.target.value.replace(/\D/g, ''));
+                        setVoidPinError(null);
+                      }}
+                      autoFocus
+                      className="w-full text-center tracking-widest font-mono font-bold text-lg bg-slate-50 border border-slate-200 rounded-xl py-2 focus:outline-hidden focus:border-indigo-600 focus:bg-white transition-all shadow-inner"
+                    />
+                    {voidPinError && (
+                      <p className="text-[10px] text-rose-600 font-bold text-center animate-pulse">{voidPinError}</p>
+                    )}
+                  </div>
+
+                  {/* Easy Touch Screen Numeric Keypad */}
+                  <div className="grid grid-cols-3 gap-1 px-4 max-w-[220px] mx-auto">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => {
+                          setVoidPin(prev => (prev + num).slice(0, 8));
+                          setVoidPinError(null);
+                        }}
+                        className="py-1 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-lg border border-slate-200/65 active:scale-95 transition-all cursor-pointer flex items-center justify-center font-mono"
+                      >
+                        {num}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setVoidPin('')}
+                      className="py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[10px] rounded-lg border border-slate-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center font-sans"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoidPin(prev => (prev + '0').slice(0, 8));
+                        setVoidPinError(null);
+                      }}
+                      className="py-1 bg-slate-50 hover:bg-slate-100 text-slate-800 font-bold text-xs rounded-lg border border-slate-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center font-mono"
+                    >
+                      0
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoidPin(prev => prev.slice(0, -1));
+                        setVoidPinError(null);
+                      }}
+                      className="py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold text-[10px] rounded-lg border border-slate-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center font-sans"
+                    >
+                      Del
+                    </button>
+                  </div>
+
+                  <div className="flex gap-3 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setPendingVoidAction(null)}
+                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!voidPin}
+                      className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-black rounded-xl text-xs transition-all cursor-pointer shadow-sm shadow-rose-100"
+                    >
+                      Autorisasi Void
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

@@ -1166,6 +1166,7 @@ export default function App() {
                   promos={promos}
                   isOnline={isOnline}
                   currentUser={currentUser}
+                  users={users}
                   onProcessOrder={handleProcessOrder}
                   onApplyPromoCode={handleApplyPromoCode}
                   activePromoCodeFromTicker={tickerPromoCode}

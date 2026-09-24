@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react';
 import { Order, Product, Category, User } from '../types';
 import { formatIDR, exportToCSV } from '../utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, FileSpreadsheet, Printer, Award, Calendar, DollarSign, ShoppingBag, CreditCard, RefreshCw, Shield, CheckCircle2, AlertTriangle, AlertCircle, Coins, ChevronRight, User as UserIcon, Check, Copy, HelpCircle } from 'lucide-react';
+import { TrendingUp, FileSpreadsheet, Printer, Award, Calendar, DollarSign, ShoppingBag, CreditCard, RefreshCw, Shield, CheckCircle2, AlertTriangle, AlertCircle, Coins, ChevronRight, User as UserIcon, Check, Copy, HelpCircle, FileText } from 'lucide-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface SalesReportProps {
   orders: Order[];
@@ -29,6 +31,7 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
   // State for Admin
   const [selectedMonth, setSelectedMonth] = useState<string>('All');
   const [selectedYear, setSelectedYear] = useState<string>('2026');
+  const [adminChartRange, setAdminChartRange] = useState<'selected' | '7days'>('selected');
 
   // State for Cashier
   const [periode, setPeriode] = useState<'harian' | 'mingguan'>('harian');
@@ -282,6 +285,364 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
     setCatatanShift('');
   };
 
+  // 7-day daily sales trend data for visualization (last 7 days leading to todayStr)
+  const last7DaysChartData = useMemo(() => {
+    const dates: string[] = [];
+    const baseDate = new Date(todayStr);
+    
+    // Generate last 7 dates in YYYY-MM-DD format (from 6 days ago to today)
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() - i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // For each date, calculate total sales and transaction count
+    return dates.map(date => {
+      const dayOrders = orders.filter(o => {
+        const matchDate = o.date === date;
+        // If cashier, we might filter by operatorFilter. For Admin, we always show all operators.
+        const matchOperator = isAdmin || operatorFilter === 'all' || o.cashier === currentUser?.name;
+        return matchDate && matchOperator;
+      });
+
+      const total = dayOrders.reduce((sum, o) => sum + o.grandTotal, 0);
+      const count = dayOrders.length;
+      
+      // Format label to "DD MMM" (e.g., "19 Jul")
+      const dateObj = new Date(date);
+      const day = dateObj.getDate();
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+      const month = monthNames[dateObj.getMonth()];
+      
+      return {
+        Tanggal: `${day} ${month}`,
+        Revenue: total,
+        'Total Penjualan': total,
+        'Jumlah Transaksi': count,
+        rawDate: date
+      };
+    });
+  }, [orders, todayStr, operatorFilter, currentUser, isAdmin]);
+
+
+  const getIndonesianMonthName = (monthStr: string) => {
+    const monthNames: { [key: string]: string } = {
+      'All': 'Sepanjang Tahun',
+      '01': 'Januari',
+      '02': 'Februari',
+      '03': 'Maret',
+      '04': 'April',
+      '05': 'Mei',
+      '06': 'Juni',
+      '07': 'Juli',
+      '08': 'Agustus',
+      '09': 'September',
+      '10': 'Oktober',
+      '11': 'November',
+      '12': 'Desember'
+    };
+    return monthNames[monthStr] || monthStr;
+  };
+
+  const handleExportPDFAdmin = () => {
+    const doc = new jsPDF() as any;
+    
+    // Header banner with modern brand styling (Indigo theme)
+    doc.setFillColor(79, 70, 229);
+    doc.rect(0, 0, 210, 42, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('QAPos Resto', 14, 16);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('SISTEM POS KASIR & CRM RESTORAN RESPONSIVENESS', 14, 22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LAPORAN KEUANGAN & ANALITIK PENJUALAN', 14, 27);
+    
+    const monthLabel = getIndonesianMonthName(selectedMonth);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Periode Laporan: ${monthLabel} ${selectedYear}`, 14, 34);
+
+    const nowStr = new Date().toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Dicetak pada: ${nowStr}`, 140, 34);
+
+    // Summary widgets (rendered with light borders)
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, 48, 182, 28, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(14, 48, 182, 28, 'S');
+
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('TOTAL PENDAPATAN', 18, 55);
+    doc.text('TOTAL TRANSAKSI', 68, 55);
+    doc.text('RATA-RATA NOTA', 114, 55);
+    doc.text('PORSI TERJUAL', 158, 55);
+
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.text(formatIDR(metricsAdmin.totalRevenue), 18, 63);
+    doc.text(`${metricsAdmin.totalTransactions} Pesanan`, 68, 63);
+    doc.text(formatIDR(metricsAdmin.averageOrderValue), 114, 63);
+    doc.text(`${metricsAdmin.totalItemsSold} Porsi`, 158, 63);
+
+    // Transaction label
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+    doc.text(`Daftar Transaksi Terbukukan (${filteredOrdersAdmin.length} Transaksi):`, 14, 84);
+
+    // Render beautiful main table
+    const tableHeaders = [['Invoice', 'Tanggal', 'Subtotal', 'Diskon', 'Pajak (10%)', 'Total Akhir', 'Metode Bayar', 'Pelanggan', 'Kasir']];
+    const tableRows = filteredOrdersAdmin.map(o => [
+      o.invoiceNumber,
+      o.date,
+      formatIDR(o.subtotal),
+      formatIDR(o.discount),
+      formatIDR(o.tax),
+      formatIDR(o.grandTotal),
+      o.paymentMethod,
+      o.customerName || 'Walk-In',
+      o.cashier
+    ]);
+
+    doc.autoTable({
+      head: tableHeaders,
+      body: tableRows,
+      startY: 89,
+      theme: 'grid',
+      styles: { fontSize: 7.5, cellPadding: 2, font: 'helvetica' },
+      headStyles: { fillColor: [79, 70, 229], textColor: [255, 255, 255], fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 26 },
+        1: { cellWidth: 18 },
+        2: { cellWidth: 21 },
+        3: { cellWidth: 16 },
+        4: { cellWidth: 16 },
+        5: { cellWidth: 22 },
+        6: { cellWidth: 16 },
+        7: { cellWidth: 22 },
+        8: { cellWidth: 25 }
+      }
+    });
+
+    let currentY = (doc as any).lastAutoTable.finalY + 12;
+
+    // Check page height limit
+    if (currentY > 220) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Analisis 5 Menu Terlaris (Top Selling Items)', 14, currentY);
+
+    const menuHeaders = [['No.', 'Nama Menu Kuliner', 'Kuantitas Terjual', 'Total Omset Bersih']];
+    const menuRows = bestSellersAdmin.map((item, idx) => [
+      `${idx + 1}`,
+      item.name,
+      `${item.quantity} Porsi`,
+      formatIDR(item.revenue)
+    ]);
+
+    doc.autoTable({
+      head: menuHeaders,
+      body: menuRows,
+      startY: currentY + 4,
+      theme: 'striped',
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [67, 56, 202], textColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 85 },
+        2: { cellWidth: 40 },
+        3: { cellWidth: 42 }
+      }
+    });
+
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    
+    // Bottom Signature Verification block
+    if (finalY < 255) {
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineDash([1.5, 1.5], 0);
+      doc.line(14, finalY + 15, 64, finalY + 15);
+      doc.line(135, finalY + 15, 185, finalY + 15);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text('Dibuat oleh, Admin Restoran', 14, finalY + 19);
+      doc.text('Disetujui oleh, Owner / Pemilik', 135, finalY + 19);
+    }
+
+    doc.save(`Laporan_Keuangan_${selectedMonth === 'All' ? 'Tahunan' : 'Bulan_' + selectedMonth}_${selectedYear}.pdf`);
+  };
+
+  const handleExportPDFCashier = () => {
+    const doc = new jsPDF() as any;
+    
+    // Header banner (Emerald Green Theme)
+    doc.setFillColor(5, 150, 105);
+    doc.rect(0, 0, 210, 42, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('QAPos Resto', 14, 16);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('SISTEM KASIR & MANAJEMEN SHIFT REKONSILIASI', 14, 22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LAPORAN REKONSILIASI & PENUTUPAN SHIFT KASIR', 14, 27);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text(`Kasir: ${currentUser?.name || 'Operator'} (Terminal: POS-01)`, 14, 34);
+
+    const nowStr = new Date().toLocaleString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text(`Waktu Cetak: ${nowStr}`, 140, 34);
+
+    // Main summary metrics widget block
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, 48, 182, 28, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(14, 48, 182, 28, 'S');
+
+    doc.setTextColor(100, 116, 139);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('OMSET BERSIH (NET)', 18, 55);
+    doc.text('TOTAL TRANSAKSI', 78, 55);
+    doc.text('PAJAK PB1 TERKUMPUL', 132, 55);
+
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
+    doc.text(formatIDR(cashierMetrics.netSales), 18, 63);
+    doc.text(`${cashierMetrics.totalTransactions} Nota Pesanan`, 78, 63);
+    doc.text(formatIDR(cashierMetrics.taxCollected), 132, 63);
+
+    // Sales metrics details
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Rangkuman Pendapatan', 14, 85);
+
+    const detailsHeaders = [['Metrik Finansial', 'Nilai Uang']];
+    const detailsRows = [
+      ['Pendapatan Kotor (Gross Sales)', formatIDR(cashierMetrics.grossSales)],
+      ['Diskon Promo Terpakai (Discounts Given)', `-${formatIDR(cashierMetrics.discountGiven)}`],
+      ['Pajak Restoran PB1 (Tax 10%)', formatIDR(cashierMetrics.taxCollected)],
+      ['Omset Bersih Hasil Shift (Net Sales)', formatIDR(cashierMetrics.netSales)],
+    ];
+
+    doc.autoTable({
+      head: detailsHeaders,
+      body: detailsRows,
+      startY: 89,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [5, 150, 105], textColor: [255, 255, 255], fontStyle: 'bold' }
+    });
+
+    // Breakdown Payment methods
+    let nextY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Rincian Per Metode Pembayaran', 14, nextY);
+
+    const pmHeaders = [['Metode Pembayaran', 'Volume Transaksi', 'Total Nominal']];
+    const pmRows = [
+      ['UANG TUNAI (CASH)', `${cashierMetrics.countCash}x Transaksi`, formatIDR(cashierMetrics.expectedCash)],
+      ['QRIS DIGITAL', `${cashierMetrics.countQRIS}x Transaksi`, formatIDR(cashierMetrics.expectedQRIS)],
+      ['DEBIT CARD', `${cashierMetrics.countDebit}x Transaksi`, formatIDR(cashierMetrics.expectedDebit)],
+      ['KREDIT CARD', `${cashierMetrics.countKredit}x Transaksi`, formatIDR(cashierMetrics.expectedKredit)],
+    ];
+
+    doc.autoTable({
+      head: pmHeaders,
+      body: pmRows,
+      startY: nextY + 4,
+      theme: 'striped',
+      styles: { fontSize: 8.5, cellPadding: 2 },
+      headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255] }
+    });
+
+    // Cash Reconciliation Section
+    nextY = (doc as any).lastAutoTable.finalY + 12;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(30, 41, 59);
+    doc.text('Hasil Audit Fisik Uang Tunai di Laci Kasir', 14, nextY);
+
+    const discrepancyText = cashDiscrepancy === 0 
+      ? '✓ MATCH (Sesuai / Cocok)' 
+      : cashDiscrepancy > 0 
+        ? `+ SURPLUS (Kelebihan Uang: ${formatIDR(cashDiscrepancy)})` 
+        : `- DEFISIT (Uang Kurang: ${formatIDR(cashDiscrepancy)})`;
+
+    const reconHeaders = [['Komponen Audit Kas', 'Keterangan Rekonsiliasi']];
+    const reconRows = [
+      ['Ekspektasi Uang Tunai di Laci Kasir (Expected)', formatIDR(cashierMetrics.expectedCash)],
+      ['Hitungan Fisik Uang Tunai (Actual)', formatIDR(actualCashValue)],
+      ['Selisih (Discrepancy Selisih)', discrepancyText],
+      ['Catatan Shift', catatanShift.trim() || 'Tidak ada catatan khusus.'],
+    ];
+
+    doc.autoTable({
+      head: reconHeaders,
+      body: reconRows,
+      startY: nextY + 4,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2.5 },
+      headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255] }
+    });
+
+    nextY = (doc as any).lastAutoTable.finalY + 15;
+
+    // Bottom signatures
+    if (nextY < 255) {
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineDash([1.5, 1.5], 0);
+      doc.line(14, nextY + 15, 64, nextY + 15);
+      doc.line(135, nextY + 15, 185, nextY + 15);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Kasir Shift, ${currentUser?.name || 'Operator'}`, 14, nextY + 19);
+      doc.text('Supervisor Toko / Owner', 135, nextY + 19);
+    }
+
+    doc.save(`Laporan_Shift_${periode === 'harian' ? 'Harian' : 'Mingguan'}_${currentUser?.name?.split(' ')[0]}.pdf`);
+  };
+
 
   // --- RENDERING VIEWS ---
 
@@ -335,15 +696,23 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
 
             <button
               onClick={handleExportExcelAdmin}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <FileSpreadsheet size={14} />
               <span>Ekspor Excel</span>
             </button>
 
             <button
+              onClick={handleExportPDFAdmin}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+            >
+              <FileText size={14} />
+              <span>Ekspor PDF</span>
+            </button>
+
+            <button
               onClick={() => window.print()}
-              className="bg-gray-800 hover:bg-gray-900 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+              className="bg-gray-850 hover:bg-gray-900 text-white font-semibold rounded-xl text-xs px-3.5 py-2 flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <Printer size={14} />
               <span>Cetak PDF</span>
@@ -397,25 +766,76 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
         {/* Visual Charts section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-150 p-4 shadow-xs space-y-3">
-            <h3 className="font-bold text-sm text-slate-950 flex items-center gap-2">
-              Tren Pendapatan Harian ({selectedMonth === 'All' ? 'Tahunan' : 'Bulan Ini'})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-50 pb-2.5">
+              <h3 className="font-bold text-sm text-slate-950 flex items-center gap-2">
+                {adminChartRange === 'selected' 
+                  ? `Tren Pendapatan Harian (${selectedMonth === 'All' ? 'Tahunan' : 'Bulan Ini'})` 
+                  : 'Tren Penjualan 7 Hari Terakhir'
+                }
+              </h3>
+              <div className="bg-slate-100 p-0.5 rounded-lg flex gap-0.5 border border-slate-200 self-start sm:self-center">
+                <button
+                  onClick={() => setAdminChartRange('selected')}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                    adminChartRange === 'selected'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Filter Kalender
+                </button>
+                <button
+                  onClick={() => setAdminChartRange('7days')}
+                  className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                    adminChartRange === '7days'
+                      ? 'bg-white text-indigo-650 shadow-xs'
+                      : 'text-slate-500 hover:text-indigo-650'
+                  }`}
+                >
+                  7 Hari Terakhir
+                </button>
+              </div>
+            </div>
 
             <div className="h-64 w-full">
-              {dailyDataAdmin.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-xs text-slate-400">
-                  Belum ada data transaksi di periode ini.
-                </div>
+              {adminChartRange === 'selected' ? (
+                dailyDataAdmin.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-xs text-slate-400">
+                    Belum ada data transaksi di periode ini.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyDataAdmin} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="Tanggal" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={(val) => `Rp ${val/1000}k`} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(value) => formatIDR(Number(value))} labelStyle={{ fontSize: '11px' }} />
+                      <Bar dataKey="Revenue" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
               ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailyDataAdmin} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="Tanggal" tick={{ fontSize: 10 }} />
-                    <YAxis tickFormatter={(val) => `Rp ${val/1000}k`} tick={{ fontSize: 10 }} />
-                    <Tooltip formatter={(value) => formatIDR(Number(value))} labelStyle={{ fontSize: '11px' }} />
-                    <Bar dataKey="Revenue" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                last7DaysChartData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-xs text-slate-400">
+                    Belum ada data transaksi 7 hari terakhir.
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={last7DaysChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                      <XAxis dataKey="Tanggal" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={(val) => `Rp ${val/1000}k`} tick={{ fontSize: 10 }} />
+                      <Tooltip 
+                        formatter={(value, name) => {
+                          if (name === 'Revenue') return [formatIDR(Number(value)), 'Omset Bersih'];
+                          return [value, name];
+                        }} 
+                        labelStyle={{ fontSize: '11px' }} 
+                      />
+                      <Bar dataKey="Revenue" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )
               )}
             </div>
           </div>
@@ -574,7 +994,15 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 relative z-10">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 relative z-10">
+          <button
+            onClick={handleExportPDFCashier}
+            className="bg-emerald-650 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-emerald-550 cursor-pointer shadow-sm"
+          >
+            <FileText size={14} />
+            <span>Ekspor PDF Shift</span>
+          </button>
+
           {/* Quick window print of shift */}
           <button
             onClick={() => window.print()}
@@ -738,6 +1166,66 @@ export default function SalesReport({ orders, products, currentUser }: SalesRepo
                 </p>
               </div>
 
+            </div>
+          </div>
+
+          {/* 7-Day Daily Sales Bar Chart Card (Recharts) */}
+          <div className="bg-white border border-slate-150 rounded-2xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <TrendingUp className="text-indigo-650 animate-pulse" size={15} />
+                  Grafik Tren Penjualan 7 Hari Terakhir
+                </h3>
+                <p className="text-[10px] text-slate-450 mt-0.5 font-medium">
+                  Performa harian omset bersih restoran ({operatorFilter === 'all' ? 'Semua Operator' : `Kasir: ${currentUser?.name?.split(' ')[0]}`})
+                </p>
+              </div>
+              <div className="bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1 text-[10px] font-mono font-bold text-indigo-700 self-start sm:self-center shrink-0">
+                Rata-rata: {formatIDR(Math.round(last7DaysChartData.reduce((sum, item) => sum + item.Revenue, 0) / 7))} / hari
+              </div>
+            </div>
+
+            <div className="h-56 w-full">
+              {last7DaysChartData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-xs text-slate-400">
+                  Belum ada data transaksi 7 hari terakhir.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={last7DaysChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis 
+                      dataKey="Tanggal" 
+                      tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
+                    />
+                    <YAxis 
+                      tickFormatter={(val) => `Rp ${val / 1000}k`} 
+                      tick={{ fontSize: 9, fill: '#64748b', fontWeight: 600 }}
+                      axisLine={{ stroke: '#cbd5e1' }}
+                      tickLine={{ stroke: '#cbd5e1' }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => {
+                        if (name === 'Revenue') {
+                          return [formatIDR(Number(value)), 'Omset Bersih'];
+                        }
+                        return [value, name];
+                      }}
+                      labelStyle={{ fontSize: '11px', fontWeight: 'bold', color: '#1e293b' }}
+                      contentStyle={{ borderRadius: '12px', borderColor: '#e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    />
+                    <Bar 
+                      dataKey="Revenue" 
+                      fill="#4f46e5" 
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={45}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
