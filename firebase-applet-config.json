@@ -1,11 +1,12 @@
 {
-  "projectId": "imperial-vortex-knzsc",
-  "appId": "1:479510286345:web:ab22971c71e7ea1a2ba8d8",
-  "apiKey": "AIzaSyAVIrYejwB0MjO6SRKe4rH6983bhJ-zlBg",
-  "authDomain": "imperial-vortex-knzsc.firebaseapp.com",
-  "storageBucket": "imperial-vortex-knzsc.firebasestorage.app",
-  "messagingSenderId": "479510286345",
+  "projectId": "YOUR_FIREBASE_PROJECT_ID",
+  "appId": "YOUR_FIREBASE_APP_ID",
+  "apiKey": "YOUR_FIREBASE_API_KEY",
+  "authDomain": "YOUR_FIREBASE_AUTH_DOMAIN",
+  "firestoreDatabaseId": "YOUR_FIREBASE_FIRESTORE_DB_ID",
+  "storageBucket": "YOUR_FIREBASE_STORAGE_BUCKET",
+  "messagingSenderId": "YOUR_FIREBASE_MESSAGING_SENDER_ID",
   "measurementId": "",
-  "oAuthClientId": "479510286345-vhbbt5knk3dedjh9em12a4f7q7fm2gha.apps.googleusercontent.com",
+  "oAuthClientId": "YOUR_OAUTH_CLIENT_ID",
   "recaptchaSiteKey": ""
 }
